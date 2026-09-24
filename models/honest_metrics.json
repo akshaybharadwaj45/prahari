@@ -1,0 +1,11 @@
+{
+  "honest_L": 0.8828,
+  "honest_F2": 0.7126,
+  "honest_MSE_HR": 0.6291,
+  "recall": 0.6966,
+  "precision": 0.7848,
+  "r2": 0.9024,
+  "rmse": 3.1267,
+  "mae": 1.5773,
+  "n_features": 124
+}

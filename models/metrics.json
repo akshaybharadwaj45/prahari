@@ -1,0 +1,28 @@
+{
+  "model_name": "Prahari Lean Standalone",
+  "feature_count": 9,
+  "features": [
+    "miss_distance",
+    "relative_speed",
+    "time_to_tca",
+    "sigma_3d",
+    "miss_to_sigma_ratio",
+    "kinetic_energy",
+    "hist_mean_risk",
+    "risk_slope",
+    "n_cdms"
+  ],
+  "accuracy": 0.9718504845408399,
+  "recall": 0.7191011235955056,
+  "precision": 0.920863309352518,
+  "f2_score": 0.7520564042303173,
+  "kelvins_loss": 0.5298077853862195,
+  "mse_hr": 0.39844533801078796,
+  "r2_score": 0.8738878965377808,
+  "rmse": 3.5537892977929784,
+  "tp": 128,
+  "fp": 11,
+  "fn": 50,
+  "tn": 1978,
+  "training_time": 0.64459228515625
+}

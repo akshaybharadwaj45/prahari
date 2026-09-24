@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Python cache & virtual environments
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Build artifacts
+dist/
+frontend/dist/
+.vite/
+frontend/.vite/
+
+# System files
+.DS_Store
+Thumbs.db
+*.log

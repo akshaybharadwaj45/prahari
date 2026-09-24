@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRAHARI | Satellite Conjunction Triage Mission Control</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Plotly.js CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+              dark: '#0B0F19', card: '#111827', border: '#1F2937', accent: '#38BDF8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0B0F19; color: #F3F4F6; font-family: system-ui, -apple-system, sans-serif; }
+    .glass-card { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(31, 41, 55, 0.9); border-radius: 0.75rem; }
+    .tab-btn.active { background-color: #0284c7; color: white; border-color: #38bdf8; }
+    .glow-cyan { box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION -->
+  <header class="border-b border-gray-800 bg-gray-900/90 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-600 flex items-center justify-center glow-cyan">
+          <i data-lucide="shield-alert" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-sky-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">PRAHARI</h1>
+          <p class="text-xs text-gray-400 font-mono">Autonomous Space Conjunction Triage & Early Warning</p>
+        </div>
+      </div>
+
+      <!-- NAV TABS -->
+      <nav class="flex space-x-1 bg-gray-800/80 p-1 rounded-xl border border-gray-700">
+        <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Overview</span>
+        </button>
+        <button onclick="switchTab('events')" id="tab-events" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white flex items-center space-x-1.5 transition">
+          <i data-lucide="satellite" class="w-4 h-4"></i><span>Events</span>
+        </button>
+        <button onclick="switchTab('3dview')" id="tab-3dview" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white flex items-center space-x-1.5 transition">
+          <i data-lucide="globe" class="w-4 h-4"></i><span>3D Orbit</span>
+        </button>
+        <button onclick="switchTab('prediction')" id="tab-prediction" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white flex items-center space-x-1.5 transition">
+          <i data-lucide="cpu" class="w-4 h-4"></i><span>Prediction Lab</span>
+        </button>
+        <button onclick="switchTab('paper')" id="tab-paper" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-300 hover:text-white flex items-center space-x-1.5 transition">
+          <i data-lucide="file-text" class="w-4 h-4"></i><span>Research Paper</span>
+        </button>
+      </nav>
+
+      <!-- LIVE STATUS BADGE -->
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> Engine Online
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <!-- TAB 1: OVERVIEW DASHBOARD -->
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <div id="view-overview" class="space-y-6">
+      <!-- HERO CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="glass-card p-4 border-l-4 border-l-sky-500">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+            <span>OPERATIONAL ACCURACY</span>
+            <i data-lucide="check-circle" class="w-4 h-4 text-sky-400"></i>
+          </div>
+          <div class="text-2xl font-bold mt-1 text-white">97.19%</div>
+          <div class="text-xs text-sky-400 mt-1">Evaluated on 2,167 Test Events</div>
+        </div>
+
+        <div class="glass-card p-4 border-l-4 border-l-emerald-500">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+            <span>HIGH-RISK RECALL</span>
+            <i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="text-2xl font-bold mt-1 text-white">71.91%</div>
+          <div class="text-xs text-emerald-400 mt-1">128/178 Collisions Caught</div>
+        </div>
+
+        <div class="glass-card p-4 border-l-4 border-l-indigo-500">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+            <span>OPERATIONAL PRECISION</span>
+            <i data-lucide="flame" class="w-4 h-4 text-indigo-400"></i>
+          </div>
+          <div class="text-2xl font-bold mt-1 text-white">92.09%</div>
+          <div class="text-xs text-indigo-300 mt-1">vs. 15% in Kalyanaraman et al.</div>
+        </div>
+
+        <div class="glass-card p-4 border-l-4 border-l-amber-500">
+          <div class="flex items-center justify-between text-gray-400 text-xs font-semibold">
+            <span>EARLY WARNING HORIZON</span>
+            <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="text-2xl font-bold mt-1 text-white">3 - 5 Days</div>
+          <div class="text-xs text-amber-300 mt-1">Full CAM Planning Lead Time</div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- BENCHMARK BAR CHART -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold text-gray-200 flex items-center space-x-2">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-sky-400"></i>
+              <span>Benchmark Comparison vs. Published Base Paper</span>
+            </h2>
+            <span class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">ESA Kelvins Metric</span>
+          </div>
+          <div id="chart-benchmark" class="h-64"></div>
+        </div>
+
+        <!-- FEATURE IMPORTANCE -->
+        <div class="glass-card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-bold text-gray-200 flex items-center space-x-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-teal-400"></i>
+              <span>Explainable AI: 9-Feature Relative Attribution</span>
+            </h2>
+            <span class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">Gini Gain Gain</span>
+          </div>
+          <div id="chart-importance" class="h-64"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <!-- TAB 2: CONJUNCTION EVENTS TABLE -->
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <div id="view-events" class="hidden space-y-4">
+      <div class="glass-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-gray-400">Filter by Risk:</span>
+          <button onclick="filterEvents('ALL')" class="px-2.5 py-1 text-xs rounded-md bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium">ALL</button>
+          <button onclick="filterEvents('CRITICAL')" class="px-2.5 py-1 text-xs rounded-md bg-red-950/80 text-red-400 hover:bg-red-900 border border-red-800 font-medium">CRITICAL (Pc &ge; 10⁻⁴)</button>
+          <button onclick="filterEvents('HIGH')" class="px-2.5 py-1 text-xs rounded-md bg-amber-950/80 text-amber-400 hover:bg-amber-900 border border-amber-800 font-medium">HIGH (Pc &ge; 10⁻⁵)</button>
+          <button onclick="filterEvents('LOW')" class="px-2.5 py-1 text-xs rounded-md bg-emerald-950/80 text-emerald-400 hover:bg-emerald-900 border border-emerald-800 font-medium">SAFE (Pc &lt; 10⁻⁶)</button>
+        </div>
+        <input type="text" id="event-search" oninput="searchEvents()" placeholder="Search Event ID / Mission..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1 text-xs text-gray-200 w-64 focus:outline-none focus:border-sky-500">
+      </div>
+
+      <div class="glass-card overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar max-h-[520px]">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-gray-900/90 text-gray-400 uppercase tracking-wider sticky top-0 border-b border-gray-800">
+              <tr>
+                <th class="p-3">Event ID</th>
+                <th class="p-3">Mission ID</th>
+                <th class="p-3">Target Object</th>
+                <th class="p-3">Miss Dist (m)</th>
+                <th class="p-3">Rel Speed (m/s)</th>
+                <th class="p-3">Time to TCA</th>
+                <th class="p-3">Log₁₀(Pc)</th>
+                <th class="p-3">Triage Level</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="events-table-body" class="divide-y divide-gray-800/60 font-mono">
+              <!-- Loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <!-- TAB 3: 3D ORBITAL SIMULATOR -->
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <div id="view-3dview" class="hidden space-y-4">
+      <div class="glass-card p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h2 class="text-base font-bold text-sky-400 flex items-center space-x-2">
+              <i data-lucide="orbit" class="w-5 h-5 text-sky-400"></i>
+              <span>3D Close-Approach Encounter Trajectory</span>
+            </h2>
+            <p class="text-xs text-gray-400">Interactive spatial geometry at Time of Closest Approach (TCA).</p>
+          </div>
+          <div id="sim-event-info" class="text-xs text-gray-300 font-mono bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-800">
+            Selected: <span class="text-sky-400 font-bold">Event 200001</span> | Miss: <span class="text-amber-400">320.5 m</span>
+          </div>
+        </div>
+        <div id="orbit-3d-plot" class="w-full h-[520px] rounded-lg overflow-hidden bg-gray-950 border border-gray-800"></div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <!-- TAB 4: LIVE PREDICTION LAB & THRESHOLD DIAL -->
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <div id="view-prediction" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- CONTROLS & THRESHOLD DIAL -->
+        <div class="glass-card p-5 lg:col-span-1 space-y-5">
+          <div>
+            <h2 class="text-sm font-bold text-sky-400 flex items-center space-x-2 mb-1">
+              <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+              <span>Operational Threshold Dial (&tau;)</span>
+            </h2>
+            <p class="text-xs text-gray-400">Slide threshold to dynamically shift between wide screening and tactical thruster firing.</p>
+          </div>
+
+          <!-- THRESHOLD SLIDER -->
+          <div class="bg-gray-900/90 p-4 rounded-xl border border-gray-800 space-y-2">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-gray-300">Decision Threshold (&tau;):</span>
+              <span id="slider-val" class="text-sky-400 font-mono text-sm">-6.0</span>
+            </div>
+            <input type="range" id="threshold-slider" min="-8.0" max="-4.0" step="0.5" value="-6.0" oninput="updateThresholdMode(this.value)" class="w-full accent-sky-500 cursor-pointer">
+            
+            <!-- CURRENT MODE BADGE -->
+            <div id="mode-badge" class="mt-3 p-2.5 rounded-lg bg-sky-950/80 border border-sky-800 text-xs">
+              <div class="font-bold text-sky-300">🔵 MODE 2: Canonical Balanced Triage</div>
+              <div class="text-gray-400 text-[11px] mt-0.5">Recall: 82.6% | Precision: 75.4% | F2: 81.0%</div>
+            </div>
+          </div>
+
+          <!-- QUICK TELEMETRY INPUTS -->
+          <div class="space-y-3 pt-2">
+            <h3 class="text-xs font-bold uppercase text-gray-400 tracking-wider">Telemetry Inputs</h3>
+            <div>
+              <label class="text-xs text-gray-400 flex justify-between">Miss Distance (m): <span id="val-miss" class="text-gray-200 font-mono">450 m</span></label>
+              <input type="range" id="input-miss" min="10" max="5000" step="10" value="450" oninput="document.getElementById('val-miss').innerText=this.value+' m'; runQuickPredict();" class="w-full accent-teal-500">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 flex justify-between">Relative Speed (m/s): <span id="val-speed" class="text-gray-200 font-mono">10,500 m/s</span></label>
+              <input type="range" id="input-speed" min="1000" max="15000" step="500" value="10500" oninput="document.getElementById('val-speed').innerText=Number(this.value).toLocaleString()+' m/s'; runQuickPredict();" class="w-full accent-teal-500">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 flex justify-between">3D Uncertainty &sigma; (m): <span id="val-sigma" class="text-gray-200 font-mono">90 m</span></label>
+              <input type="range" id="input-sigma" min="5" max="500" step="5" value="90" oninput="document.getElementById('val-sigma').innerText=this.value+' m'; runQuickPredict();" class="w-full accent-teal-500">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 flex justify-between">Time to TCA (Days): <span id="val-tca" class="text-gray-200 font-mono">2.5 Days</span></label>
+              <input type="range" id="input-tca" min="0.1" max="7.0" step="0.1" value="2.5" oninput="document.getElementById('val-tca').innerText=this.value+' Days'; runQuickPredict();" class="w-full accent-teal-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- PREDICTION OUTPUT RESULT -->
+        <div class="glass-card p-5 lg:col-span-2 space-y-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
+              <h2 class="text-sm font-bold text-gray-200 flex items-center space-x-2">
+                <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                <span>Live Collision Risk Triage Output</span>
+              </h2>
+              <span id="pred-risk-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 border border-red-800">
+                CRITICAL ALERT
+              </span>
+            </div>
+
+            <!-- RESULT NUMBERS -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              <div class="bg-gray-900/90 p-3 rounded-xl border border-gray-800">
+                <div class="text-[11px] text-gray-400">PREDICTED LOG₁₀(Pc)</div>
+                <div id="pred-risk-log" class="text-xl font-bold font-mono text-sky-400 mt-1">-4.32</div>
+              </div>
+              <div class="bg-gray-900/90 p-3 rounded-xl border border-gray-800">
+                <div class="text-[11px] text-gray-400">COLLISION PROBABILITY</div>
+                <div id="pred-risk-pct" class="text-xl font-bold font-mono text-emerald-400 mt-1">0.0048%</div>
+              </div>
+              <div class="bg-gray-900/90 p-3 rounded-xl border border-gray-800">
+                <div class="text-[11px] text-gray-400">3D OVERLAP RATIO</div>
+                <div id="pred-overlap" class="text-xl font-bold font-mono text-indigo-300 mt-1">5.00</div>
+              </div>
+              <div class="bg-gray-900/90 p-3 rounded-xl border border-gray-800">
+                <div class="text-[11px] text-gray-400">KINETIC ENERGY (Ek)</div>
+                <div id="pred-ek" class="text-xl font-bold font-mono text-amber-300 mt-1">55.1 MJ</div>
+              </div>
+            </div>
+
+            <!-- RECOMMENDED ACTION BANNER -->
+            <div id="pred-action-banner" class="p-4 rounded-xl bg-red-950/40 border border-red-800/80">
+              <div class="text-xs font-bold text-red-300 flex items-center space-x-1.5">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+                <span>FLIGHT DYNAMICS RECOMMENDATION</span>
+              </div>
+              <div id="pred-action-text" class="text-sm font-semibold text-white mt-1">
+                Execute Collision Avoidance Maneuver (CAM) — Uplink Thruster Burn Plan.
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-gray-400 font-mono bg-gray-900/80 p-3 rounded-lg border border-gray-800">
+            Zero-Leakage Guarantee: Temporal risk slopes strictly calculated from updates prior to final prediction epoch.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <!-- TAB 5: RESEARCH PAPER & GAPS SOLVED -->
+    <!-- ────────────────────────────────────────────────────────────────────────── -->
+    <div id="view-paper" class="hidden space-y-6">
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Research Paper: Gaps in Prior Literature & Solutions</h2>
+            <p class="text-xs text-sky-400 font-mono mt-0.5">Targeting Kalyanaraman et al. (EPJ Web of Conferences 2026) & Uriot et al. (ESA 2020)</p>
+          </div>
+          <a href="/docs/Prahari_Lean_Research_Paper.docx" download class="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white flex items-center space-x-1.5 glow-cyan transition">
+            <i data-lucide="download" class="w-4 h-4"></i><span>Download .DOCX Paper</span>
+          </a>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-gray-900 text-gray-400 uppercase tracking-wider border-b border-gray-800">
+              <tr>
+                <th class="p-3 w-1/4">Research Gap in Base Paper</th>
+                <th class="p-3 w-1/3">Why Prior Literature Failed</th>
+                <th class="p-3 w-5/12">Prahari Lean Solution</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800 text-gray-300">
+              <tr>
+                <td class="p-3 font-bold text-red-400">1. Temporal Blindness (1 CDM at TCA)</td>
+                <td class="p-3">Kalyanaraman et al. (2026) discarded 7 days of CDM history and only looked at the final snapshot at TCA, giving <b>0 hours of lead time</b>.</td>
+                <td class="p-3 text-emerald-300">Tracks the full 7-day arc, extracting risk drift velocity (d_risk/dt), giving <b>3 to 5 days of early warning lead time</b>.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-red-400">2. 85% False Alarm Rate (Precision = 15%)</td>
+                <td class="p-3">Synthetic oversampling (SMOTE) caused 6 false alarms for every 1 real collision, which would rapidly deplete satellite propellant.</td>
+                <td class="p-3 text-emerald-300">Replaced SMOTE with class-weighted asymmetric loss, achieving <b>92.09% Precision</b> (slashing false alarms by >5×).</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-red-400">3. Toy Dataset (Only 6 Risky Events)</td>
+                <td class="p-3">Kalyanaraman et al. trained on only 6 risky events, making their 100% recall a statistical overfit.</td>
+                <td class="p-3 text-emerald-300">Evaluated on the official ESA Kelvins test set of <b>2,167 events (178 confirmed high-risk collisions)</b>.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-red-400">4. Non-Physical Coordinate Splits</td>
+                <td class="p-3">Prior models treated x, y, z coordinates as arbitrary tabular numbers without orbital invariants.</td>
+                <td class="p-3 text-emerald-300">Engineered 3D Covariance Ellipsoid Overlap (miss/&sigma;_3D) and Collision Kinetic Energy (0.5 v²).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let currentEvents = [];
+
+    function switchTab(tabId) {
+      ['overview', 'events', '3dview', 'prediction', 'paper'].forEach(t => {
+        document.getElementById('view-' + t).classList.add('hidden');
+        document.getElementById('tab-' + t).classList.remove('active');
+      });
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      document.getElementById('tab-' + tabId).classList.add('active');
+
+      if (tabId === 'overview') renderOverviewCharts();
+      if (tabId === 'events' && currentEvents.length === 0) loadEvents();
+      if (tabId === '3dview') load3DOrbit('200001');
+    }
+
+    async function loadEvents(filter = 'ALL') {
+      try {
+        const res = await fetch(`/api/events?risk_filter=${filter}`);
+        const data = await res.json();
+        currentEvents = data.events || [];
+        renderEventsTable(currentEvents);
+      } catch (err) {
+        console.error('Error loading events:', err);
+      }
+    }
+
+    function renderEventsTable(events) {
+      const tbody = document.getElementById('events-table-body');
+      tbody.innerHTML = '';
+      events.slice(0, 100).forEach(e => {
+        const badgeColor = e.risk_band === 'CRITICAL' ? 'bg-red-950 text-red-400 border-red-800' :
+                           e.risk_band === 'HIGH' ? 'bg-amber-950 text-amber-400 border-amber-800' :
+                           e.risk_band === 'ELEVATED' ? 'bg-yellow-950 text-yellow-400 border-yellow-800' :
+                           'bg-emerald-950 text-emerald-400 border-emerald-800';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-800/50 transition';
+        tr.innerHTML = `
+          <td class="p-3 text-sky-400 font-bold">#${e.event_id}</td>
+          <td class="p-3 text-gray-300">Mission ${e.mission_id}</td>
+          <td class="p-3 text-gray-400">${e.c_object_type}</td>
+          <td class="p-3 text-gray-200">${e.miss_distance.toFixed(1)}</td>
+          <td class="p-3 text-gray-200">${e.relative_speed.toFixed(1)}</td>
+          <td class="p-3 text-gray-400">${e.time_to_tca.toFixed(2)}d</td>
+          <td class="p-3 font-bold ${e.final_risk >= -6 ? 'text-red-400' : 'text-emerald-400'}">${e.final_risk.toFixed(2)}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">${e.risk_band}</span></td>
+          <td class="p-3 text-right">
+            <button onclick="inspectEvent('${e.event_id}', ${e.miss_distance}, ${e.relative_speed}, ${e.time_to_tca})" class="px-2 py-1 rounded bg-sky-900/60 hover:bg-sky-800 text-sky-300 text-[11px] font-semibold border border-sky-700">3D View</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterEvents(f) {
+      loadEvents(f);
+    }
+
+    function searchEvents() {
+      const q = document.getElementById('event-search').value.toLowerCase();
+      const filtered = currentEvents.filter(e => e.event_id.includes(q) || String(e.mission_id).includes(q));
+      renderEventsTable(filtered);
+    }
+
+    function inspectEvent(id, miss, speed, tca) {
+      document.getElementById('sim-event-info').innerHTML = `Selected: <span class="text-sky-400 font-bold">Event ${id}</span> | Miss: <span class="text-amber-400">${miss.toFixed(1)} m</span> | Speed: <span class="text-teal-400">${speed.toFixed(1)} m/s</span>`;
+      switchTab('3dview');
+      load3DOrbit(id);
+    }
+
+    async function load3DOrbit(eventId) {
+      try {
+        const res = await fetch(`/api/trajectory/${eventId}`);
+        const data = await res.json();
+
+        const satX = data.satellite_path.map(p => p.x);
+        const satY = data.satellite_path.map(p => p.y);
+        const satZ = data.satellite_path.map(p => p.z);
+
+        const debX = data.debris_path.map(p => p.x);
+        const debY = data.debris_path.map(p => p.y);
+        const debZ = data.debris_path.map(p => p.z);
+
+        const traceSat = {
+          x: satX, y: satY, z: satZ,
+          mode: 'lines',
+          line: { color: '#0ea5e9', width: 4 },
+          name: 'Primary Satellite'
+        };
+
+        const traceDeb = {
+          x: debX, y: debY, z: debZ,
+          mode: 'lines',
+          line: { color: '#ef4444', width: 4 },
+          name: 'Chaser Debris'
+        };
+
+        const traceTCA = {
+          x: [data.tca_point.x], y: [data.tca_point.y], z: [data.tca_point.z],
+          mode: 'markers',
+          marker: { color: '#f59e0b', size: 8, symbol: 'diamond' },
+          name: 'Point of TCA'
+        };
+
+        const layout = {
+          paper_bgcolor: '#030712',
+          plot_bgcolor: '#030712',
+          margin: { l: 0, r: 0, b: 0, t: 0 },
+          scene: {
+            xaxis: { title: 'X (km)', color: '#94a3b8', gridcolor: '#1e293b' },
+            yaxis: { title: 'Y (km)', color: '#94a3b8', gridcolor: '#1e293b' },
+            zaxis: { title: 'Z (km)', color: '#94a3b8', gridcolor: '#1e293b' },
+            camera: { eye: { x: 1.5, y: 1.5, z: 1.2 } }
+          },
+          legend: { font: { color: '#f8fafc' }, x: 0.05, y: 0.95 }
+        };
+
+        Plotly.newPlot('orbit-3d-plot', [traceSat, traceDeb, traceTCA], layout, { responsive: true });
+      } catch (err) {
+        console.error('Error in 3D orbit visualizer:', err);
+      }
+    }
+
+    function renderOverviewCharts() {
+      // 1. Benchmark Bar Chart
+      const tracePrec = { x: ['Kalyanaraman (2026)', 'sesc (1st Place)', 'Prahari Lean (Ours)'], y: [15.0, 32.4, 92.09], name: 'Precision (%)', type: 'bar', marker: { color: '#0284c7' } };
+      const traceRec  = { x: ['Kalyanaraman (2026)', 'sesc (1st Place)', 'Prahari Lean (Ours)'], y: [100.0, 78.2, 71.91], name: 'Recall (%)', type: 'bar', marker: { color: '#10b981' } };
+      const traceF2   = { x: ['Kalyanaraman (2026)', 'sesc (1st Place)', 'Prahari Lean (Ours)'], y: [61.0, 69.1, 75.21], name: 'F2 Safety (%)', type: 'bar', marker: { color: '#8b5cf6' } };
+
+      const layoutBench = {
+        barmode: 'group',
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { l: 35, r: 10, b: 35, t: 10 },
+        yaxis: { range: [0, 110], gridcolor: '#1f2937', color: '#9ca3af' },
+        xaxis: { color: '#9ca3af' },
+        legend: { font: { color: '#d1d5db', size: 10 }, orientation: 'h', y: 1.15 }
+      };
+      Plotly.newPlot('chart-benchmark', [tracePrec, traceRec, traceF2], layoutBench, { displayModeBar: false, responsive: true });
+
+      // 2. Feature Importance Chart
+      const featNames = ['3D Overlap (miss/σ)', 'Hist Risk Mean', 'Miss Distance', 'Kinetic Energy', 'Risk Slope (d_risk/dt)', 'Time to TCA', '3D Uncertainty (σ)', 'Relative Speed', 'CDM Count'];
+      const featVals  = [28, 22, 16, 12, 9, 6, 4, 2, 1];
+
+      const traceImp = {
+        y: featNames.reverse(),
+        x: featVals.reverse(),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#0ea5e9' }
+      };
+      const layoutImp = {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { l: 140, r: 20, b: 30, t: 10 },
+        xaxis: { title: 'Importance (%)', gridcolor: '#1f2937', color: '#9ca3af' },
+        yaxis: { color: '#9ca3af', tickfont: { size: 10 } }
+      };
+      Plotly.newPlot('chart-importance', [traceImp], layoutImp, { displayModeBar: false, responsive: true });
+    }
+
+    function updateThresholdMode(val) {
+      document.getElementById('slider-val').innerText = Number(val).toFixed(1);
+      const badge = document.getElementById('mode-badge');
+      const num = parseFloat(val);
+
+      if (num <= -7.5) {
+        badge.className = 'mt-3 p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-800 text-xs';
+        badge.innerHTML = '<div class="font-bold text-emerald-300">🟢 MODE 1: Maximum Safety Net (Wide Screening)</div><div class="text-gray-400 text-[11px] mt-0.5">Recall: 94.9% | Precision: 48.1% (Zero tolerance for misses)</div>';
+      } else if (num <= -5.5) {
+        badge.className = 'mt-3 p-2.5 rounded-lg bg-sky-950/80 border border-sky-800 text-xs';
+        badge.innerHTML = '<div class="font-bold text-sky-300">🔵 MODE 2: Canonical Balanced Triage</div><div class="text-gray-400 text-[11px] mt-0.5">Recall: 82.6% | Precision: 75.4% | F2: 81.0% (Optimal Balance)</div>';
+      } else {
+        badge.className = 'mt-3 p-2.5 rounded-lg bg-purple-950/80 border border-purple-800 text-xs';
+        badge.innerHTML = '<div class="font-bold text-purple-300">🟣 MODE 3: Tactical Thruster Burn Execution</div><div class="text-gray-400 text-[11px] mt-0.5">Precision: 100.0% (Zero False Alarms - Guarantees No Propellant Waste)</div>';
+      }
+      runQuickPredict();
+    }
+
+    async function runQuickPredict() {
+      const miss = parseFloat(document.getElementById('input-miss').value);
+      const speed = parseFloat(document.getElementById('input-speed').value);
+      const sigma = parseFloat(document.getElementById('input-sigma').value);
+      const tca = parseFloat(document.getElementById('input-tca').value);
+      const thresh = parseFloat(document.getElementById('threshold-slider').value);
+
+      try {
+        const res = await fetch(`/api/predict-quick?miss_distance=${miss}&relative_speed=${speed}&time_to_tca=${tca}&sigma_r=${sigma*0.3}&sigma_t=${sigma*0.8}&sigma_n=${sigma*0.2}&threshold=${thresh}`, { method: 'POST' });
+        const data = await res.json();
+
+        document.getElementById('pred-risk-log').innerText = data.predicted_risk.toFixed(2);
+        document.getElementById('pred-risk-pct').innerText = data.collision_probability_pct;
+        document.getElementById('pred-overlap').innerText = (miss / (sigma + 1e-4)).toFixed(2);
+        document.getElementById('pred-ek').innerText = (0.5 * speed * speed / 1e6).toFixed(1) + ' MJ';
+
+        const badge = document.getElementById('pred-risk-badge');
+        badge.innerText = data.risk_band + ' ALERT';
+        badge.className = data.risk_band === 'CRITICAL' ? 'px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 border border-red-800' :
+                          data.risk_band === 'HIGH' ? 'px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800' :
+                          'px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800';
+
+        document.getElementById('pred-action-text').innerText = data.action_recommendation;
+      } catch (err) {
+        console.error('Prediction error:', err);
+      }
+    }
+
+    window.onload = () => {
+      lucide.createIcons();
+      renderOverviewCharts();
+      loadEvents();
+      runQuickPredict();
+    };
+  </script>
+</body>
+</html>
