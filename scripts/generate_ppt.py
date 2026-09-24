@@ -4,172 +4,170 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 import os
+import win32com.client
 
+# Base paths
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DOCS_DIR = os.path.join(BASE_DIR, 'docs')
+ASSETS_DIR = os.path.join(DOCS_DIR, 'template_assets')
+PREVIEWS_DIR = os.path.join(DOCS_DIR, 'slide_previews')
+os.makedirs(DOCS_DIR, exist_ok=True)
+os.makedirs(ASSETS_DIR, exist_ok=True)
+os.makedirs(PREVIEWS_DIR, exist_ok=True)
+
+bg_title_slide = os.path.join(ASSETS_DIR, 'bg_title_slide.png')
+bg_content_slide = os.path.join(ASSETS_DIR, 'bg_content_slide.png')
+
+# -------------------------------------------------------------
+# PRESENTATION INITIALIZATION
+# -------------------------------------------------------------
 prs = pptx.Presentation()
 prs.slide_width = Inches(13.333)
 prs.slide_height = Inches(7.5)
 
-# Styling Constants
-COLOR_BG       = RGBColor(255, 255, 255)
-COLOR_TEXT     = RGBColor(30, 41, 59)     # Dark Slate #1e293b
-COLOR_MUTED    = RGBColor(71, 85, 105)    # Slate #475569
-COLOR_TITLE    = RGBColor(220, 38, 38)    # Bright Academic Red #dc2626
-COLOR_SUBTITLE = RGBColor(14, 116, 144)   # Teal #0e7490
-COLOR_TEAL     = RGBColor(15, 118, 110)   # Teal corner accent
-COLOR_ORANGE   = RGBColor(234, 88, 12)    # Orange top-right corner
-COLOR_BORDER   = RGBColor(100, 116, 139)
+COLOR_BG          = RGBColor(255, 255, 255)
+COLOR_BLACK       = RGBColor(0, 0, 0)         # Exact 0x0 from template
+COLOR_TITLE_RED   = RGBColor(255, 0, 0)       # Exact 0xff0000 from template
+COLOR_BLUE_TITLE  = RGBColor(49, 133, 156)    # Exact 0x31859c from template
+COLOR_BORDER      = RGBColor(0, 0, 0)         # Black border for boxes
 
-def draw_corner_accents(slide):
-    # Top-right orange corner triangle
-    tr = slide.shapes.add_shape(MSO_SHAPE.RIGHT_TRIANGLE, Inches(12.0), Inches(0), Inches(1.333), Inches(2.2))
-    tr.fill.solid()
-    tr.fill.fore_color.rgb = COLOR_ORANGE
-    tr.line.fill.background()
-    tr.rotation = 90
+def apply_slide_background(slide, is_title=False):
+    bg_img = bg_title_slide if is_title else bg_content_slide
+    if os.path.exists(bg_img):
+        slide.shapes.add_picture(bg_img, Inches(0), Inches(0), Inches(13.333), Inches(7.5))
 
-    # Bottom-left teal corner triangle
-    bl = slide.shapes.add_shape(MSO_SHAPE.RIGHT_TRIANGLE, Inches(0), Inches(5.3), Inches(1.2), Inches(2.2))
-    bl.fill.solid()
-    bl.fill.fore_color.rgb = COLOR_TEAL
-    bl.line.fill.background()
-    bl.rotation = 270
-
-    # Top-left KMIT / Institution Badge
-    tb_logo = slide.shapes.add_textbox(Inches(0.4), Inches(0.3), Inches(2.0), Inches(0.6))
-    p_l = tb_logo.text_frame.paragraphs[0]
-    p_l.text = 'Kmit'
-    p_l.font.name = 'Arial'
-    p_l.font.size = Pt(18)
-    p_l.font.bold = True
-    p_l.font.color.rgb = RGBColor(15, 23, 42)
-
-def add_slide_header(slide, title_text):
-    draw_corner_accents(slide)
+def add_header(slide, title_text):
+    apply_slide_background(slide, is_title=False)
     
-    tb = slide.shapes.add_textbox(Inches(1.2), Inches(0.3), Inches(10.5), Inches(0.8))
+    # Title Text placed at the exact template header position (x=1.07", y=0.36")
+    tb = slide.shapes.add_textbox(Inches(1.07), Inches(0.36), Inches(10.5), Inches(0.55))
     tf = tb.text_frame
+    tf.word_wrap = True
     p = tf.paragraphs[0]
     p.text = title_text.upper()
     p.font.name = 'Arial'
-    p.font.size = Pt(26)
+    p.font.size = Pt(32)
     p.font.bold = True
-    p.font.color.rgb = COLOR_TITLE
+    p.font.color.rgb = COLOR_TITLE_RED
+
+def render_section(tf, heading, items, first=False, head_size=20, bullet_size=15.5, space_head=12, space_item=3.5):
+    p_h = tf.paragraphs[0] if first else tf.add_paragraph()
+    p_h.text = heading
+    p_h.font.name = 'Arial'
+    p_h.font.size = Pt(head_size)
+    p_h.font.bold = True
+    p_h.font.color.rgb = COLOR_BLACK
+    if not first:
+        p_h.space_before = Pt(space_head)
+        
+    for it in items:
+        p = tf.add_paragraph()
+        p.text = '•  ' + it
+        p.font.name = 'Arial'
+        p.font.size = Pt(bullet_size)
+        p.font.color.rgb = COLOR_BLACK
+        p.space_before = Pt(space_item)
 
 # -------------------------------------------------------------
-# SLIDE 1: TITLE SLIDE
+# SLIDE 1: TITLE SLIDE (Uses authentic original master background)
 # -------------------------------------------------------------
 s1 = prs.slides.add_slide(prs.slide_layouts[6])
-draw_corner_accents(s1)
+apply_slide_background(s1, is_title=True)
 
-# Institution Heading
-tb_inst = s1.shapes.add_textbox(Inches(1.5), Inches(1.2), Inches(10.33), Inches(1.2))
-tf_inst = tb_inst.text_frame
-tf_inst.word_wrap = True
-
-p_i1 = tf_inst.paragraphs[0]
-p_i1.text = 'KESHAV MEMORIAL INSTITUTE OF TECHNOLOGY'
-p_i1.font.name = 'Arial'
-p_i1.font.size = Pt(20)
-p_i1.font.bold = True
-p_i1.font.color.rgb = RGBColor(13, 148, 136) # Teal
-p_i1.alignment = PP_ALIGN.CENTER
-
-p_i2 = tf_inst.add_paragraph()
-p_i2.text = "AN AUTONOMOUS INSTITUTION - ACCREDITED BY NAAC WITH 'A' GRADE\nNarayanaguda, Hyderabad."
-p_i2.font.name = 'Arial'
-p_i2.font.size = Pt(11)
-p_i2.font.bold = True
-p_i2.font.color.rgb = COLOR_MUTED
-p_i2.alignment = PP_ALIGN.CENTER
-
-# Project Title
-tb_proj = s1.shapes.add_textbox(Inches(1.0), Inches(2.6), Inches(11.33), Inches(1.0))
+# Project Title (Placed at exact y=3.26" matching template)
+tb_proj = s1.shapes.add_textbox(Inches(1.5), Inches(3.26), Inches(10.333), Inches(0.8))
 tf_proj = tb_proj.text_frame
 tf_proj.word_wrap = True
 
 p_p = tf_proj.paragraphs[0]
 p_p.text = 'G-1400 | PRAHARI: Autonomous Spacecraft Conjunction Assessment & High-Recall Collision Triage'
 p_p.font.name = 'Arial'
-p_p.font.size = Pt(16)
+p_p.font.size = Pt(20)
 p_p.font.bold = True
-p_p.font.color.rgb = RGBColor(2, 132, 199) # Blue
+p_p.font.color.rgb = COLOR_BLUE_TITLE
 p_p.alignment = PP_ALIGN.CENTER
 
-p_date = tf_proj.add_paragraph()
+# Date (Placed at exact y=4.12" matching template)
+tb_date = s1.shapes.add_textbox(Inches(4.5), Inches(4.12), Inches(4.333), Inches(0.4))
+tf_date = tb_date.text_frame
+p_date = tf_date.paragraphs[0]
 p_date.text = 'Date: 25-09-2026'
 p_date.font.name = 'Arial'
-p_date.font.size = Pt(13)
+p_date.font.size = Pt(20)
 p_date.font.bold = True
-p_date.font.color.rgb = RGBColor(14, 116, 144)
+p_date.font.color.rgb = COLOR_BLUE_TITLE
 p_date.alignment = PP_ALIGN.CENTER
-p_date.space_before = Pt(6)
 
-# Team Box
-box_team = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(2.2), Inches(4.2), Inches(4.3), Inches(2.6))
+# Left Box: Team Members (Exact position: x=2.22", y=4.79", w=5.27", h=2.36")
+box_team = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(2.22), Inches(4.79), Inches(5.27), Inches(2.36))
 box_team.fill.solid()
 box_team.fill.fore_color.rgb = COLOR_BG
 box_team.line.color.rgb = COLOR_BORDER
+box_team.line.width = Pt(1.5)
 tf_t = box_team.text_frame
 tf_t.word_wrap = True
 
 p_th = tf_t.paragraphs[0]
 p_th.text = 'Team Members'
 p_th.font.name = 'Arial'
-p_th.font.size = Pt(13)
+p_th.font.size = Pt(18)
 p_th.font.bold = True
 p_th.font.underline = True
-p_th.font.color.rgb = COLOR_TEXT
+p_th.font.color.rgb = COLOR_BLACK
 p_th.alignment = PP_ALIGN.CENTER
 
 members = [
-    '1. Akshay Bharadwaj',
-    '2. Team Member 2',
-    '3. Team Member 3',
-    '4. Team Member 4',
-    '5. Team Member 5'
+    '1.  Akshay Bharadwaj       -24BD1A052K',
+    '2.  M. Lakshmi Srivani      - 24BD1A0533',
+    '3.  P. Pragna                     - 24BD1A053B',
+    '4.  R. Lahari                      - 24BD1A053N',
+    '5.  S. Meghana                 - 24BD1A053R'
 ]
 for m in members:
     p_m = tf_t.add_paragraph()
     p_m.text = m
     p_m.font.name = 'Arial'
-    p_m.font.size = Pt(11)
-    p_m.font.color.rgb = COLOR_TEXT
-    p_m.space_before = Pt(3)
+    p_m.font.size = Pt(15.5)
+    p_m.font.color.rgb = COLOR_BLACK
+    p_m.space_before = Pt(2)
 
-# Mentors Box
-box_men = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(6.8), Inches(4.2), Inches(4.3), Inches(2.6))
+# Right Box: Mentors (Exact position: x=7.69", y=4.79", w=4.60", h=2.36")
+box_men = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(7.69), Inches(4.79), Inches(4.60), Inches(2.36))
 box_men.fill.solid()
 box_men.fill.fore_color.rgb = COLOR_BG
 box_men.line.color.rgb = COLOR_BORDER
+box_men.line.width = Pt(1.5)
 tf_men = box_men.text_frame
 tf_men.word_wrap = True
 
 p_mh = tf_men.paragraphs[0]
 p_mh.text = 'Mentors'
-p_mh.font.name = 'Arial'
-p_mh.font.size = Pt(13)
+p_mh.font.name = 'Times New Roman'
+p_mh.font.size = Pt(20)
 p_mh.font.bold = True
 p_mh.font.underline = True
-p_mh.font.color.rgb = COLOR_TEXT
+p_mh.font.color.rgb = COLOR_BLACK
 p_mh.alignment = PP_ALIGN.CENTER
 
-p_mn = tf_men.add_paragraph()
-p_mn.text = 'Faculty Mentor / Project Guide'
-p_mn.font.name = 'Arial'
-p_mn.font.size = Pt(13)
-p_mn.font.bold = True
-p_mn.font.color.rgb = COLOR_TEXT
-p_mn.alignment = PP_ALIGN.CENTER
-p_mn.space_before = Pt(36)
+p_mn1 = tf_men.add_paragraph()
+p_mn1.text = 'T Rupa Devi Ma’am'
+p_mn1.font.name = 'Times New Roman'
+p_mn1.font.size = Pt(20)
+p_mn1.font.bold = True
+p_mn1.font.color.rgb = COLOR_BLACK
+p_mn1.alignment = PP_ALIGN.CENTER
+p_mn1.space_before = Pt(36)
 
 # -------------------------------------------------------------
-# SLIDE 2: CONTENTS
+# SLIDE 2: CONTENTS (Exact position: x=1.15", y=1.12", size=18pt)
 # -------------------------------------------------------------
 s2 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s2, 'CONTENTS')
+add_header(s2, 'CONTENTS')
 
-tb_c = s2.shapes.add_textbox(Inches(1.5), Inches(1.3), Inches(10.0), Inches(5.8))
+tb_c = s2.shapes.add_textbox(Inches(1.15), Inches(1.12), Inches(10.5), Inches(6.0))
 tf_c = tb_c.text_frame
+tf_c.word_wrap = True
+
 contents = [
     '1. Title Slide',
     '2. Content',
@@ -178,8 +176,8 @@ contents = [
     '5. Base Paper / Research Reference',
     '6. Requirement',
     '7. Design (System Architecture)',
-    '8. Telemetry & Feature Architecture',
-    '9. Execution Flow & Class Diagram',
+    '8. Telemetry & Conjunction Data Schema',
+    '9. Class & Component Architecture',
     '10. Development',
     '11. Project Outcome',
     '12. Conclusion',
@@ -189,67 +187,51 @@ for idx, c in enumerate(contents):
     p = tf_c.paragraphs[0] if idx == 0 else tf_c.add_paragraph()
     p.text = c
     p.font.name = 'Arial'
-    p.font.size = Pt(13)
-    p.font.color.rgb = COLOR_TEXT
-    p.space_before = Pt(4)
+    p.font.size = Pt(18)
+    p.font.color.rgb = COLOR_BLACK
+    if idx > 0:
+        p.space_before = Pt(4)
 
 # -------------------------------------------------------------
-# SLIDE 3: INTRODUCTION
+# SLIDE 3: INTRODUCTION (Exact position: x=1.07", y=1.20")
 # -------------------------------------------------------------
 s3 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s3, 'INTRODUCTION')
+add_header(s3, 'INTRODUCTION')
 
-tb_intro = s3.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_intro = s3.shapes.add_textbox(Inches(1.07), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_in = tb_intro.text_frame
 tf_in.word_wrap = True
 
-def add_section(tf, heading, items, first=False):
-    p_h = tf.paragraphs[0] if first else tf.add_paragraph()
-    p_h.text = heading
-    p_h.font.name = 'Arial'
-    p_h.font.size = Pt(14)
-    p_h.font.bold = True
-    p_h.font.color.rgb = COLOR_TEXT
-    if not first:
-        p_h.space_before = Pt(8)
-    for it in items:
-        p = tf.add_paragraph()
-        p.text = '•  ' + it
-        p.font.name = 'Arial'
-        p.font.size = Pt(11)
-        p.font.color.rgb = COLOR_MUTED
-        p.space_before = Pt(3)
+render_section(tf_in, 'Problem', [
+    'Over 36,000 tracked debris objects and constellations create thousands of close conjunctions weekly in LEO.',
+    'Missing a real collision event (False Negative) leads to permanent satellite loss and cascading Kessler syndrome.',
+    'Conventional manual screening of Conjunction Data Messages (CDMs) is slow, fatigue-prone, and unscalable.'
+], first=True, head_size=20, bullet_size=15.5, space_head=0, space_item=3)
 
-add_section(tf_in, 'Problem', [
-    'Over 36,000 tracked debris objects and mega-constellations create thousands of close orbital conjunctions weekly in Low Earth Orbit (LEO).',
-    'Missing a real collision event (False Negative) leads to permanent spacecraft destruction and runaway orbital debris cascading (Kessler syndrome).',
-    'Current manual screening of Conjunction Data Messages (CDMs) is time-consuming and vulnerable to human fatigue under high alert volumes.'
-], first=True)
-
-add_section(tf_in, 'Objective', [
+render_section(tf_in, 'Objective', [
     'Develop Prahari: an autonomous, high-recall spacecraft conjunction triage and decision-support system.',
-    'Ingest standard multi-pass CDMs to predict collision probability log10(Pc) with high precision and actionable early warning.',
+    'Predict collision probability log10(Pc) with high precision and actionable early warning across multi-pass CDMs.',
     'Eliminate false alarm floods and provide interactive 3D WebGL orbit visualization for flight safety operators.'
-])
+], first=False, head_size=20, bullet_size=15.5, space_head=10, space_item=3)
 
-add_section(tf_in, 'Solution Impact', [
+render_section(tf_in, 'Solution Impact', [
     'Achieves 92.70% High-Risk Recall (165/178 dangerous collisions detected at the official -6.0 alert threshold).',
     'Reduces false alarms by ~75% (79.71% precision, only 42 false alarms vs 85% in published literature).',
     'Provides 3 to 5 days of actionable lead time for Collision Avoidance Maneuver (CAM) thruster burn execution.',
-    'Enables automated triage and real-time 3D orbital encounter screening.'
-])
+    'Enables automated multi-tier triage and real-time 3D orbital encounter screening.'
+], first=False, head_size=20, bullet_size=15.5, space_head=10, space_item=3)
 
 # -------------------------------------------------------------
-# SLIDE 4: TECHNOLOGY USED
+# SLIDE 4: TECHNOLOGY USED (Exact position: x=1.15", y=1.20")
 # -------------------------------------------------------------
 s4 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s4, 'TECHNOLOGY USED')
+add_header(s4, 'TECHNOLOGY USED')
 
-tb_tech = s4.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_tech = s4.shapes.add_textbox(Inches(1.15), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_tech = tb_tech.text_frame
 tf_tech.word_wrap = True
 
-add_section(tf_tech, 'Technology Used:', [
+render_section(tf_tech, 'Technology Used:', [
     'Frontend: React 18, TypeScript, Vite & Tailwind CSS',
     'Backend: FastAPI (Python 3.11) & Uvicorn ASGI Server',
     'Machine Learning: Extreme Gradient Boosting (XGBoost) Regressor',
@@ -259,123 +241,146 @@ add_section(tf_tech, 'Technology Used:', [
     'Data Imputation: Pre-Computed Median Matrix (100% Zero-Crash Reliability)',
     'Data: ESA Kelvins Spacecraft Collision Dataset & Space Surveillance Network CDMs',
     'Tools: Git, GitHub, REST APIs & Windows START.bat Launcher'
-], first=True)
+], first=True, head_size=20, bullet_size=15.5, space_head=0, space_item=3)
 
-add_section(tf_tech, 'Base Paper :', [
-    '\"Machine Learning Approaches for Spacecraft Collision Avoidance Challenge\"',
-    'Authors: Kalyanaraman et al. (EPJ Web of Conferences, 2026) & Uriot et al. (ESA ACT, 2020)'
-])
+p_bph = tf_tech.add_paragraph()
+p_bph.text = 'Base Paper :'
+p_bph.font.name = 'Arial'
+p_bph.font.size = Pt(20)
+p_bph.font.bold = True
+p_bph.font.color.rgb = COLOR_BLACK
+p_bph.space_before = Pt(12)
+
+p_bp1 = tf_tech.add_paragraph()
+p_bp1.text = '“Machine Learning Approaches for Spacecraft Collision Avoidance Challenge”'
+p_bp1.font.name = 'Arial'
+p_bp1.font.size = Pt(16.5)
+p_bp1.font.color.rgb = COLOR_BLACK
+p_bp1.space_before = Pt(3)
+
+p_bp2 = tf_tech.add_paragraph()
+p_bp2.text = 'Authors: Kalyanaraman et al. (EPJ Web of Conferences, 2026) & Uriot et al. (ESA Advanced Concepts Team)'
+p_bp2.font.name = 'Arial'
+p_bp2.font.size = Pt(15.5)
+p_bp2.font.color.rgb = COLOR_BLACK
+p_bp2.space_before = Pt(3)
 
 # -------------------------------------------------------------
-# SLIDE 5: BASE PAPER / RESEARCH REFERENCE
+# SLIDE 5: BASE PAPER / RESEARCH REFERENCE (Exact position: top=1.20", columns top=3.15")
 # -------------------------------------------------------------
 s5 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s5, 'BASE PAPER / RESEARCH REFERENCE')
+add_header(s5, 'BASE PAPER / RESEARCH REFERENCE')
 
-tb_bp = s5.shapes.add_textbox(Inches(1.2), Inches(1.2), Inches(11.0), Inches(1.8))
-tf_bp = tb_bp.text_frame
-tf_bp.word_wrap = True
+tb_bp_top = s5.shapes.add_textbox(Inches(1.18), Inches(1.20), Inches(11.0), Inches(1.7))
+tf_bpt = tb_bp_top.text_frame
+tf_bpt.word_wrap = True
 
-p_bpt = tf_bp.paragraphs[0]
-p_bpt.text = 'Paper Title:'
-p_bpt.font.name = 'Arial'
-p_bpt.font.size = Pt(13)
-p_bpt.font.bold = True
-p_bpt.font.color.rgb = COLOR_TEXT
+p_pt = tf_bpt.paragraphs[0]
+p_pt.text = 'Paper Title:'
+p_pt.font.name = 'Arial'
+p_pt.font.size = Pt(20)
+p_pt.font.bold = True
+p_pt.font.color.rgb = COLOR_BLACK
 
-p_bp1 = tf_bp.add_paragraph()
-p_bp1.text = '\"Machine Learning Approaches for Spacecraft Collision Avoidance Challenge\"'
-p_bp1.font.name = 'Arial'
-p_bp1.font.size = Pt(12)
-p_bp1.font.bold = True
-p_bp1.font.color.rgb = COLOR_SUBTITLE
+p_p1 = tf_bpt.add_paragraph()
+p_p1.text = '“Machine Learning Approaches for Spacecraft Collision Avoidance Challenge”'
+p_p1.font.name = 'Arial'
+p_p1.font.size = Pt(17.5)
+p_p1.font.color.rgb = COLOR_BLACK
+p_p1.space_before = Pt(2)
 
-p_bp2 = tf_bp.add_paragraph()
-p_bp2.text = 'Focus: Spacecraft Collision Risk Prediction, CDM Assessment & Orbit Uncertainty'
-p_bp2.font.name = 'Arial'
-p_bp2.font.size = Pt(11)
-p_bp2.font.color.rgb = COLOR_MUTED
+p_p2 = tf_bpt.add_paragraph()
+p_p2.text = 'Focus: Spacecraft Collision Risk Prediction, CDM Assessment & Orbit Uncertainty'
+p_p2.font.name = 'Arial'
+p_p2.font.size = Pt(16.5)
+p_p2.font.color.rgb = COLOR_BLACK
+p_p2.space_before = Pt(2)
 
-p_bp3 = tf_bp.add_paragraph()
-p_bp3.text = 'Authors: Kalyanaraman et al. (2026) & Uriot et al. (ESA Advanced Concepts Team)'
-p_bp3.font.name = 'Arial'
-p_bp3.font.size = Pt(11)
-p_bp3.font.color.rgb = COLOR_MUTED
+p_p3 = tf_bpt.add_paragraph()
+p_p3.text = 'Authors: Kalyanaraman et al. (2026) & Uriot et al. (ESA Advanced Concepts Team)'
+p_p3.font.name = 'Arial'
+p_p3.font.size = Pt(16.5)
+p_p3.font.color.rgb = COLOR_BLACK
+p_p3.space_before = Pt(2)
 
-# Two Boxes for Existing vs Gap
-b_ex = s5.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(1.2), Inches(3.1), Inches(5.3), Inches(3.9))
-b_ex.fill.solid()
-b_ex.fill.fore_color.rgb = COLOR_BG
-b_ex.line.color.rgb = COLOR_BORDER
-tf_ex = b_ex.text_frame
+# Two Open Columns
+tb_ex = s5.shapes.add_textbox(Inches(1.18), Inches(3.15), Inches(5.5), Inches(4.0))
+tf_ex = tb_ex.text_frame
 tf_ex.word_wrap = True
 
-p = tf_ex.paragraphs[0]
-p.text = 'Existing approach :'
-p.font.name = 'Arial'
-p.font.size = Pt(13)
-p.font.bold = True
-p.font.color.rgb = COLOR_TEXT
+p_ex_h = tf_ex.paragraphs[0]
+p_ex_h.text = 'Existing approach :'
+p_ex_h.font.name = 'Arial'
+p_ex_h.font.size = Pt(20)
+p_ex_h.font.bold = True
+p_ex_h.font.color.rgb = COLOR_BLACK
 
-ex_items = [
+ex_points = [
     'Static single-snapshot CDM evaluation',
     'Evaluated strictly at TCA (t = 0 hours)',
     'Standard binary classification with SMOTE',
     'Assumes equal cost between False Positives and False Negatives',
     'Black-box feature engineering with opaque synthetic indices'
 ]
-for it in ex_items:
+for pt in ex_points:
     p = tf_ex.add_paragraph()
-    p.text = '•  ' + it
+    p.text = '•  ' + pt
     p.font.name = 'Arial'
-    p.font.size = Pt(11)
-    p.font.color.rgb = COLOR_MUTED
-    p.space_before = Pt(6)
+    p.font.size = Pt(15.5)
+    p.font.color.rgb = COLOR_BLACK
+    p.space_before = Pt(5)
 
-b_gap = s5.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(6.9), Inches(3.1), Inches(5.3), Inches(3.9))
-b_gap.fill.solid()
-b_gap.fill.fore_color.rgb = COLOR_BG
-b_gap.line.color.rgb = COLOR_BORDER
-tf_gap = b_gap.text_frame
-tf_gap.word_wrap = True
+tb_rg = s5.shapes.add_textbox(Inches(7.15), Inches(3.15), Inches(5.5), Inches(4.0))
+tf_rg = tb_rg.text_frame
+tf_rg.word_wrap = True
 
-p = tf_gap.paragraphs[0]
-p.text = 'Research Gap :'
-p.font.name = 'Arial'
-p.font.size = Pt(13)
-p.font.bold = True
-p.font.color.rgb = COLOR_TITLE
+p_rg_h = tf_rg.paragraphs[0]
+p_rg_h.text = 'Research Gap :'
+p_rg_h.font.name = 'Arial'
+p_rg_h.font.size = Pt(20)
+p_rg_h.font.bold = True
+p_rg_h.font.color.rgb = COLOR_BLACK
 
-gap_items = [
+rg_points = [
     'Temporal Blindness: 0-hour lead time is useless for thruster burn prep -> Solved with 3-5 days lead time.',
     'False Alarm Flooding: 85% false alarm rate (15% precision) exhausts fuel -> Solved with 79.71% precision.',
     'Class Imbalance: 178 collisions vs 1,989 safe events -> Solved via 30x Asymmetric Weighting.',
     'High Recall Focus: Prioritizing recall (92.70%) to ensure spacecraft survival.',
     'Native Telemetry: Ingests 100 raw CDM features with 0 synthetic bloat.'
 ]
-for it in gap_items:
-    p = tf_gap.add_paragraph()
-    p.text = '•  ' + it
+for pt in rg_points:
+    p = tf_rg.add_paragraph()
+    p.text = '•  ' + pt
     p.font.name = 'Arial'
-    p.font.size = Pt(11)
-    p.font.color.rgb = COLOR_MUTED
-    p.space_before = Pt(6)
+    p.font.size = Pt(15.5)
+    p.font.color.rgb = COLOR_BLACK
+    p.space_before = Pt(5)
 
 # -------------------------------------------------------------
-# SLIDE 6: REQUIREMENT
+# SLIDE 6: REQUIREMENT (Exact position: x=1.07", y=1.20")
 # -------------------------------------------------------------
 s6 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s6, 'REQUIREMENT')
+add_header(s6, 'REQUIREMENT')
 
-tb_req = s6.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_req = s6.shapes.add_textbox(Inches(1.07), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_req = tb_req.text_frame
 tf_req.word_wrap = True
 
-add_section(tf_req, 'Product:', [
-    'Prahari: Autonomous Spacecraft Conjunction Triage & Collision Avoidance Decision-Support System'
-], first=True)
+p_rh = tf_req.paragraphs[0]
+p_rh.text = 'Product:'
+p_rh.font.name = 'Arial'
+p_rh.font.size = Pt(20)
+p_rh.font.bold = True
+p_rh.font.color.rgb = COLOR_BLACK
 
-add_section(tf_req, 'Features:', [
+p_rp = tf_req.add_paragraph()
+p_rp.text = 'Prahari: Autonomous Spacecraft Conjunction Triage & Collision Avoidance Decision-Support System'
+p_rp.font.name = 'Arial'
+p_rp.font.size = Pt(16.5)
+p_rp.font.color.rgb = COLOR_BLACK
+p_rp.space_before = Pt(2)
+
+render_section(tf_req, 'Features:', [
     'Automated Multi-Pass CDM Ingestion & Telemetry Preprocessing',
     'High-Recall XGBoost Conjunction Risk Regression (log10 Pc prediction)',
     'Asymmetric Risk Thresholding calibrated at the official -6.0 alert boundary',
@@ -386,199 +391,79 @@ add_section(tf_req, 'Features:', [
     'Model Lab with live threshold calibration slider and SHAP feature importance charts',
     'Drag-and-Drop Live Telemetry Prediction Sandbox for operational passes',
     'Automated Collision Avoidance Maneuver (CAM) alert and report generation'
-])
+], first=False, head_size=20, bullet_size=15.0, space_head=10, space_item=3.0)
 
 # -------------------------------------------------------------
 # SLIDE 7: DESIGN (SYSTEM ARCHITECTURE)
 # -------------------------------------------------------------
 s7 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s7, 'DESIGN')
+add_header(s7, 'DESIGN')
 
-tb_des_title = s7.shapes.add_textbox(Inches(1.2), Inches(1.1), Inches(11.0), Inches(0.5))
-p = tb_des_title.text_frame.paragraphs[0]
-p.text = 'Prahari - System Design Architecture'
-p.font.name = 'Arial'
-p.font.size = Pt(16)
-p.font.bold = True
-p.font.color.rgb = COLOR_TEXT
+tb_d1 = s7.shapes.add_textbox(Inches(1.07), Inches(0.98), Inches(11.0), Inches(0.5))
+tf_d1 = tb_d1.text_frame
+p_d1 = tf_d1.paragraphs[0]
+p_d1.text = 'Prahari – System Design & Pipeline Architecture'
+p_d1.font.name = 'Arial'
+p_d1.font.size = Pt(20)
+p_d1.font.bold = True
+p_d1.font.color.rgb = COLOR_BLACK
+p_d1.alignment = PP_ALIGN.CENTER
 
-arch_boxes = [
-    ('1. Input Data Stream', Inches(1.2), Inches(1.8), Inches(2.5), Inches(5.0), COLOR_SUBTITLE, [
-        'Space Surveillance Network (SSN)',
-        'ESA Kelvins Portal',
-        'CCSDS Standard CDMs',
-        'Multi-Pass Observation Arc',
-        'Solar Weather Feeds (F10, AP)'
-    ]),
-    ('2. Telemetry Processing', Inches(4.0), Inches(1.8), Inches(2.5), Inches(5.0), RGBColor(168, 85, 247), [
-        '100 Raw Feature Extractor',
-        'Kinematics (20 cols)',
-        'Covariances (36 cols)',
-        'Solar Drag (4 cols)',
-        'Tracking Residuals (40 cols)',
-        'Median Imputation Matrix'
-    ]),
-    ('3. High-Recall AI Core', Inches(6.8), Inches(1.8), Inches(2.5), Inches(5.0), COLOR_TITLE, [
-        'XGBoost Regressor',
-        'Asymmetric Loss (w=30x)',
-        'Continuous log10(Pc) Output',
-        'Threshold Filter (tau = -6.0)',
-        '92.70% High-Risk Recall',
-        '89.77% Safety F2 Score'
-    ]),
-    ('4. Mission Control UI', Inches(9.6), Inches(1.8), Inches(2.5), Inches(5.0), COLOR_TEAL, [
-        'React 18 + Vite Frontend',
-        'Three.js 3D Orbit Scene',
-        'Timeline Playback Scrubber',
-        'Model Lab Calibration',
-        'Instant CSV Predictor',
-        'CAM Action Protocol'
-    ]),
-]
-
-for title, left, top, width, height, color, items in arch_boxes:
-    box = s7.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-    box.fill.solid()
-    box.fill.fore_color.rgb = COLOR_BG
-    box.line.color.rgb = color
-    box.line.width = Pt(2)
-    tf = box.text_frame
-    tf.word_wrap = True
-    
-    p = tf.paragraphs[0]
-    p.text = title
-    p.font.name = 'Arial'
-    p.font.size = Pt(13)
-    p.font.bold = True
-    p.font.color.rgb = color
-    
-    for item in items:
-        p_i = tf.add_paragraph()
-        p_i.text = '•  ' + item
-        p_i.font.name = 'Arial'
-        p_i.font.size = Pt(10)
-        p_i.font.color.rgb = COLOR_TEXT
-        p_i.space_before = Pt(6)
+diag1_file = os.path.join(DOCS_DIR, 'system_design_diagram.png')
+if os.path.exists(diag1_file):
+    s7.shapes.add_picture(diag1_file, Inches(1.4), Inches(1.6), Inches(10.53), Inches(5.4))
 
 # -------------------------------------------------------------
-# SLIDE 8: TELEMETRY & FEATURE ARCHITECTURE
+# SLIDE 8: DESIGN (DATABASE & TELEMETRY SCHEMA)
 # -------------------------------------------------------------
 s8 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s8, 'TELEMETRY & FEATURE ARCHITECTURE')
+add_header(s8, 'DESIGN')
 
-tb_feat_title = s8.shapes.add_textbox(Inches(1.2), Inches(1.1), Inches(11.0), Inches(0.5))
-p = tb_feat_title.text_frame.paragraphs[0]
-p.text = '100 Native Telemetry Parameters (Zero Synthetic Bloat)'
-p.font.name = 'Arial'
-p.font.size = Pt(16)
-p.font.bold = True
-p.font.color.rgb = COLOR_TEXT
+tb_d2 = s8.shapes.add_textbox(Inches(1.07), Inches(0.98), Inches(11.0), Inches(0.5))
+tf_d2 = tb_d2.text_frame
+p_d2 = tf_d2.paragraphs[0]
+p_d2.text = 'Prahari – Telemetry & Conjunction Data Schema'
+p_d2.font.name = 'Arial'
+p_d2.font.size = Pt(20)
+p_d2.font.bold = True
+p_d2.font.color.rgb = COLOR_BLACK
+p_d2.alignment = PP_ALIGN.CENTER
 
-feat_cards = [
-    ('1. Orbital Kinematics (20 Features)', Inches(1.2), Inches(1.7), Inches(5.3), Inches(2.5), COLOR_SUBTITLE,
-     'Captures 3D spatial clearance, relative closing speed, RTN vectors, Keplerian semi-major axes, eccentricities, inclinations, and Mahalanobis statistical distance.'),
-    ('2. Covariance Dispersion (36 Features)', Inches(6.9), Inches(1.7), Inches(5.3), Inches(2.5), COLOR_TEAL,
-     'Encapsulates full 3D position and velocity 1-sigma error dispersions, 3x3 covariance matrix determinants (uncertainty volumes in m^6), and 18 RTN cross-correlation terms.'),
-    ('3. Solar & Space Weather (4 Features)', Inches(1.2), Inches(4.4), Inches(5.3), Inches(2.5), RGBColor(217, 119, 6),
-     'Includes daily 10.7 cm solar flux (F10), 81-day centered flux (F3M), sunspot number (SSN), and geomagnetic index (AP) driving atmospheric drag density in LEO.'),
-    ('4. Tracking Observables (40 Features)', Inches(6.9), Inches(4.4), Inches(5.3), Inches(2.5), RGBColor(147, 51, 234),
-     'Contains radar pass counts (available vs. used), weighted RMS orbit fit residuals, radar cross section (RCS), ballistic area-to-mass ratios, and theoretical maximum risk bounds.')
-]
-
-for title, left, top, width, height, color, desc in feat_cards:
-    box = s8.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-    box.fill.solid()
-    box.fill.fore_color.rgb = COLOR_BG
-    box.line.color.rgb = color
-    box.line.width = Pt(1.5)
-    tf = box.text_frame
-    tf.word_wrap = True
-    
-    p = tf.paragraphs[0]
-    p.text = title
-    p.font.name = 'Arial'
-    p.font.size = Pt(13)
-    p.font.bold = True
-    p.font.color.rgb = color
-    
-    p_d = tf.add_paragraph()
-    p_d.text = desc
-    p_d.font.name = 'Arial'
-    p_d.font.size = Pt(11)
-    p_d.font.color.rgb = COLOR_TEXT
-    p_d.space_before = Pt(8)
+diag2_file = os.path.join(DOCS_DIR, 'database_diagram.png')
+if os.path.exists(diag2_file):
+    s8.shapes.add_picture(diag2_file, Inches(1.4), Inches(1.6), Inches(10.53), Inches(5.4))
 
 # -------------------------------------------------------------
-# SLIDE 9: CLASS & COMPONENT ARCHITECTURE
+# SLIDE 9: DESIGN (CLASS & COMPONENT ARCHITECTURE)
 # -------------------------------------------------------------
 s9 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s9, 'CLASS & COMPONENT ARCHITECTURE')
+add_header(s9, 'DESIGN')
 
-class_boxes = [
-    ('FastAPI Application (main.py)', Inches(1.2), Inches(1.5), Inches(5.3), Inches(2.6), COLOR_SUBTITLE, [
-        '+ get_events(critical_only: bool)',
-        '+ get_event_details(event_id: str)',
-        '+ predict_cdm(file: UploadFile)',
-        '+ get_model_info(): Dict[str, Any]',
-        '+ health_check(): Dict[str, str]'
-    ]),
-    ('PredictionService (prediction_service.py)', Inches(6.9), Inches(1.5), Inches(5.3), Inches(2.6), COLOR_TITLE, [
-        '+ model: XGBRegressor',
-        '+ feature_cols: List[str] (100 cols)',
-        '+ medians: Dict[str, float]',
-        '+ predict_event(cdm_rows, threshold)',
-        '+ load_model(): bool'
-    ]),
-    ('DatasetService (dataset_service.py)', Inches(1.2), Inches(4.3), Inches(5.3), Inches(2.6), COLOR_TEAL, [
-        '+ df: DataFrame',
-        '+ events_cache: List[Dict]',
-        '+ load_dataset(): void',
-        '+ get_events(): List[Dict]',
-        '+ get_event_details(id): Dict'
-    ]),
-    ('Mission Control UI (React + Three.js)', Inches(6.9), Inches(4.3), Inches(5.3), Inches(2.6), RGBColor(147, 51, 234), [
-        '+ EncounterScene.tsx (3D WebGL Orbit Scene)',
-        '+ ModelLabPage.tsx (Threshold Slider & SHAP)',
-        '+ OverviewPage.tsx (Live CDM Dashboard)',
-        '+ PredictionPage.tsx (CSV Upload Module)'
-    ])
-]
+tb_d3 = s9.shapes.add_textbox(Inches(1.07), Inches(0.98), Inches(11.0), Inches(0.5))
+tf_d3 = tb_d3.text_frame
+p_d3 = tf_d3.paragraphs[0]
+p_d3.text = 'Prahari – Component & Class Architecture'
+p_d3.font.name = 'Arial'
+p_d3.font.size = Pt(20)
+p_d3.font.bold = True
+p_d3.font.color.rgb = COLOR_BLACK
+p_d3.alignment = PP_ALIGN.CENTER
 
-for title, left, top, width, height, color, items in class_boxes:
-    box = s9.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-    box.fill.solid()
-    box.fill.fore_color.rgb = COLOR_BG
-    box.line.color.rgb = color
-    box.line.width = Pt(1.5)
-    tf = box.text_frame
-    tf.word_wrap = True
-    
-    p = tf.paragraphs[0]
-    p.text = title
-    p.font.name = 'Arial'
-    p.font.size = Pt(13)
-    p.font.bold = True
-    p.font.color.rgb = color
-    
-    for item in items:
-        p_i = tf.add_paragraph()
-        p_i.text = item
-        p_i.font.name = 'Arial'
-        p_i.font.size = Pt(10)
-        p_i.font.color.rgb = COLOR_TEXT
-        p_i.space_before = Pt(4)
+diag3_file = os.path.join(DOCS_DIR, 'class_diagram.png')
+if os.path.exists(diag3_file):
+    s9.shapes.add_picture(diag3_file, Inches(1.4), Inches(1.6), Inches(10.53), Inches(5.4))
 
 # -------------------------------------------------------------
-# SLIDE 10: DEVELOPMENT
+# SLIDE 10: DEVELOPMENT (Exact position: x=1.15", y=1.20")
 # -------------------------------------------------------------
 s10 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s10, 'DEVELOPMENT')
+add_header(s10, 'DEVELOPMENT')
 
-tb_dev = s10.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_dev = s10.shapes.add_textbox(Inches(1.15), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_dev = tb_dev.text_frame
 tf_dev.word_wrap = True
 
-add_section(tf_dev, 'Development Steps:', [
+render_section(tf_dev, 'Development Steps:', [
     'Extracted and audited 100 native telemetry parameters across 162,634 observation rows.',
     'Engineered asymmetric sample weighting protocol (w = 30.0 for high risk) to prioritize recall.',
     'Trained regularized XGBoost Regressor with histogram binning and pre-computed median imputation.',
@@ -587,69 +472,80 @@ add_section(tf_dev, 'Development Steps:', [
     'Developed React 18 + Vite frontend with Three.js 3D WebGL orbital encounter scene and timeline scrubber.',
     'Created interactive Model Lab with dynamic threshold slider, 100-feature directory, and SHAP charts.',
     'Authored publication-ready academic research paper (.docx) and 16:9 presentation deck (.pptx).'
-], first=True)
+], first=True, head_size=20, bullet_size=15.5, space_head=0, space_item=3.0)
 
-add_section(tf_dev, 'Tools Used:', [
+render_section(tf_dev, 'Tools Used:', [
     'React, TypeScript & Vite',
     'Tailwind CSS & Lucide Icons',
     'Python 3.11, FastAPI & Uvicorn',
     'XGBoost, Scikit-learn, Pandas & Joblib',
     'Three.js & WebGL Canvas Renderer',
     'Git & GitHub'
-])
+], first=False, head_size=20, bullet_size=15.5, space_head=10, space_item=3.0)
 
 # -------------------------------------------------------------
-# SLIDE 11: PROJECT OUTCOME
+# SLIDE 11: PROJECT OUTCOME (Exact position: x=1.15", y=1.20")
 # -------------------------------------------------------------
 s11 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s11, 'PROJECT OUTCOME')
+add_header(s11, 'PROJECT OUTCOME')
 
-tb_out = s11.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_out = s11.shapes.add_textbox(Inches(1.15), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_out = tb_out.text_frame
 tf_out.word_wrap = True
 
-add_section(tf_out, 'Achievements', [
+render_section(tf_out, 'Achievements', [
     'High-Risk Recall: 92.70% (165 of 178 dangerous collisions detected ahead of time).',
     'Safety F2 Score: 89.77% (Recall weighted 2x to prioritize mission survival).',
     'Precision: 79.71% (Only 42 false alarms across 1,989 safe events, eliminating the 85% false alarm flood).',
     'Overall Accuracy: 97.46% (2,112 out of 2,167 events correctly classified).',
     '100% Native Telemetry: Ingests raw CDMs directly without artificial synthetic features.',
     'Actionable Lead Time: 3 to 5 days pre-TCA for Collision Avoidance Maneuver (CAM) execution.'
-], first=True)
+], first=True, head_size=20, bullet_size=15.0, space_head=0, space_item=2.5)
 
-add_section(tf_out, 'Current Challenges', [
+render_section(tf_out, 'Current Challenges', [
     'Sparse ground radar coverage causes intermittent tracking gaps in higher orbital inclinations.',
     'Solar storm geomagnetic surges temporarily inflate atmospheric drag covariance errors.'
-])
+], first=False, head_size=20, bullet_size=15.0, space_head=9, space_item=2.5)
 
-add_section(tf_out, 'Future Improvements', [
+render_section(tf_out, 'Future Improvements', [
     'Autonomous CAM Delta-V burn calculation using Reinforcement Learning.',
     'Live Space-Track / ESA API integration for continuous automatic ingest.',
     'Constellation multi-satellite screening to avoid secondary induced conjunctions.'
-])
+], first=False, head_size=20, bullet_size=15.0, space_head=9, space_item=2.5)
 
-add_section(tf_out, 'Paper:', [
-    'Status: Research paper is complete and formatted for journal submission at docs/Prahari_Research_Paper.docx.'
-])
+p_paph = tf_out.add_paragraph()
+p_paph.text = 'Paper:'
+p_paph.font.name = 'Arial'
+p_paph.font.size = Pt(20)
+p_paph.font.bold = True
+p_paph.font.color.rgb = COLOR_BLACK
+p_paph.space_before = Pt(9)
+
+p_pap1 = tf_out.add_paragraph()
+p_pap1.text = 'Status: Research paper is complete and formatted for journal submission at docs/Prahari_Research_Paper.docx.'
+p_pap1.font.name = 'Arial'
+p_pap1.font.size = Pt(15.0)
+p_pap1.font.color.rgb = COLOR_BLACK
+p_pap1.space_before = Pt(2)
 
 # -------------------------------------------------------------
-# SLIDE 12: CONCLUSION
+# SLIDE 12: CONCLUSION (Exact position: x=1.15", y=1.20")
 # -------------------------------------------------------------
 s12 = prs.slides.add_slide(prs.slide_layouts[6])
-add_slide_header(s12, 'CONCLUSION')
+add_header(s12, 'CONCLUSION')
 
-tb_con = s12.shapes.add_textbox(Inches(1.2), Inches(1.3), Inches(11.0), Inches(5.8))
+tb_con = s12.shapes.add_textbox(Inches(1.15), Inches(1.20), Inches(11.0), Inches(5.8))
 tf_con = tb_con.text_frame
 tf_con.word_wrap = True
 
-add_section(tf_con, 'Key Takeaways', [
+render_section(tf_con, 'Key Takeaways', [
     'Prahari transforms multi-pass raw CDM telemetry into high-recall, actionable collision warnings.',
     'Asymmetric loss optimization successfully solves the class imbalance and catches 92.70% of collisions.',
     'Eliminates the temporal blindness (TCA=0h) and 85% false alarm rate of published literature.',
     'Interactive 3D Three.js mission control bridges machine learning with operational flight dynamics.'
-], first=True)
+], first=True, head_size=20, bullet_size=15.5, space_head=0, space_item=3.0)
 
-add_section(tf_con, 'New Skills Learned', [
+render_section(tf_con, 'New Skills Learned', [
     'Space Situational Awareness (SSA) & Astrodynamic Conjunction Assessment',
     'Asymmetric Loss Formulation for Extreme Class Imbalance in Space Systems',
     'High-Dimensional Telemetry Engineering on 100 Native Parameters',
@@ -657,35 +553,40 @@ add_section(tf_con, 'New Skills Learned', [
     '3D Orbital Graphics & Covariance Ellipsoid Rendering (Three.js & WebGL)',
     'High-Performance Asynchronous Microservices (FastAPI & Uvicorn)',
     'Academic Research Paper Authoring & Rigorous Empirical Benchmarking'
-])
+], first=False, head_size=20, bullet_size=15.5, space_head=10, space_item=3.0)
 
 # -------------------------------------------------------------
 # SLIDE 13: THANK YOU!
 # -------------------------------------------------------------
 s13 = prs.slides.add_slide(prs.slide_layouts[6])
-draw_corner_accents(s13)
+apply_slide_background(s13, is_title=False)
 
-tb_ty = s13.shapes.add_textbox(Inches(2.0), Inches(2.8), Inches(9.33), Inches(2.0))
+tb_ty = s13.shapes.add_textbox(Inches(0), Inches(3.2), Inches(13.333), Inches(1.5))
 tf_ty = tb_ty.text_frame
 p_ty = tf_ty.paragraphs[0]
 p_ty.text = 'Thank you!'
 p_ty.font.name = 'Arial'
 p_ty.font.size = Pt(48)
 p_ty.font.bold = True
-p_ty.font.color.rgb = COLOR_TEXT
+p_ty.font.color.rgb = COLOR_BLACK
 p_ty.alignment = PP_ALIGN.CENTER
 
-p_ty_sub = tf_ty.add_paragraph()
-p_ty_sub.text = 'Questions & Discussion\n\nPRAHARI: Autonomous Spacecraft Conjunction Triage Platform\nhttps://github.com/akshaybharadwaj45/prahari'
-p_ty_sub.font.name = 'Arial'
-p_ty_sub.font.size = Pt(14)
-p_ty_sub.font.color.rgb = COLOR_MUTED
-p_ty_sub.alignment = PP_ALIGN.CENTER
-p_ty_sub.space_before = Pt(16)
-
-# Save presentation
-output_dir = r'C:\Users\Akshay baradwaj\Desktop\prahari-google\prahari-standalone\docs'
-os.makedirs(output_dir, exist_ok=True)
-output_path = os.path.join(output_dir, 'Prahari_Presentation.pptx')
+# -------------------------------------------------------------
+# SAVE PRESENTATION & EXPORT PREVIEWS
+# -------------------------------------------------------------
+output_path = os.path.join(DOCS_DIR, 'Prahari_Presentation.pptx')
 prs.save(output_path)
-print(f'Successfully generated 13-slide presentation matching exact sample format at {output_path}')
+print(f'Successfully generated presentation at: {output_path}')
+
+# Export previews
+try:
+    ppt_app = win32com.client.Dispatch('PowerPoint.Application')
+    pres = ppt_app.Presentations.Open(output_path, WithWindow=False)
+    for i, slide in enumerate(pres.Slides):
+        img_path = os.path.join(PREVIEWS_DIR, f'slide_{i+1}.png')
+        slide.Export(img_path, 'PNG', 1920, 1080)
+    pres.Close()
+    ppt_app.Quit()
+    print('All 13 slides exported to PNG successfully!')
+except Exception as e:
+    print('PowerPoint export error:', e)
