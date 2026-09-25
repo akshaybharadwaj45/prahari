@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Upload, FileText, Play, Download, CheckCircle2, AlertTriangle, 
-  ShieldAlert, Activity, History, Trash2, Eye, FileSpreadsheet 
+  ShieldAlert, Activity, History, Trash2, Eye, FileSpreadsheet,
+  XCircle, ArrowRight
 } from 'lucide-react';
 
 interface PredictionHistoryItem {
@@ -18,13 +19,23 @@ interface PredictionHistoryItem {
   top_features?: Array<{ feature: string; importance: number; raw_key?: string }>;
 }
 
+interface StagedFile {
+  name: string;
+  blob: Blob;
+  size: number;
+  rowCount: number;
+  previewRows: string[][];
+  headers: string[];
+}
+
 const STORAGE_KEY = 'prahari_prediction_history';
 
 export default function PredictionPage() {
+  const [stagedFile, setStagedFile] = useState<StagedFile | null>(null);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeSample, setActiveSample] = useState<string | null>(null);
+  const [stagingLoading, setStagingLoading] = useState(false);
 
   // Prediction History state
   const [history, setHistory] = useState<PredictionHistoryItem[]>(() => {
@@ -45,6 +56,92 @@ export default function PredictionPage() {
     }
   }, [history]);
 
+  const parseCsvPreview = async (fileBlob: Blob, filename: string): Promise<StagedFile> => {
+    const text = await fileBlob.text();
+    const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
+    const headers = lines.length > 0 ? lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '')) : [];
+    const previewRows = lines.slice(1, 4).map(l => l.split(',').map(c => c.trim().replace(/^["']|["']$/g, '')));
+    const rowCount = Math.max(0, lines.length - 1);
+
+    return {
+      name: filename,
+      blob: fileBlob,
+      size: fileBlob.size,
+      rowCount,
+      previewRows,
+      headers: headers.slice(0, 8), // top 8 columns for preview
+    };
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setStagingLoading(true);
+    try {
+      const parsed = await parseCsvPreview(file, file.name);
+      setStagedFile(parsed);
+      setResult(null); // Clear previous result until user clicks "Run"
+    } catch (err: any) {
+      setError('Failed to read CSV file: ' + err.message);
+    } finally {
+      setStagingLoading(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  const selectSampleTemplate = async (filename: string, label: string) => {
+    setError(null);
+    setStagingLoading(true);
+    try {
+      const res = await fetch(`/${filename}`);
+      if (!res.ok) throw new Error(`Could not load template file ${filename}`);
+      const blob = await res.blob();
+      const parsed = await parseCsvPreview(blob, `${label} (${filename})`);
+      setStagedFile(parsed);
+      setResult(null); // Do NOT auto-run. User must click "RUN PREDICTION"
+    } catch (err: any) {
+      setError(err.message || 'Failed to stage sample CDM template');
+    } finally {
+      setStagingLoading(false);
+    }
+  };
+
+  const clearStagedFile = () => {
+    setStagedFile(null);
+    setError(null);
+  };
+
+  const executePrediction = async () => {
+    if (!stagedFile) {
+      setError('Please upload or select a CDM file first.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append('file', stagedFile.blob, stagedFile.name);
+
+    try {
+      const res = await fetch('http://localhost:8000/api/predict-cdm', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.detail || 'Prediction failed');
+      }
+      setResult(data);
+      saveToHistory(data, stagedFile.name);
+    } catch (err: any) {
+      setError(err.message || 'Failed to process CDM prediction');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const saveToHistory = (data: any, label: string) => {
     const newItem: PredictionHistoryItem = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -63,58 +160,7 @@ export default function PredictionPage() {
     setHistory(prev => [newItem, ...prev.slice(0, 49)]); // Keep latest 50
   };
 
-  const executePrediction = async (fileBlob: Blob, sampleLabel?: string) => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    const label = sampleLabel || activeSample || 'Custom CDM File';
-    if (sampleLabel) setActiveSample(sampleLabel);
-
-    const formData = new FormData();
-    formData.append('file', fileBlob, 'cdm_upload.csv');
-
-    try {
-      const res = await fetch('http://localhost:8000/api/predict-cdm', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || data.detail || 'Prediction failed');
-      }
-      setResult(data);
-      saveToHistory(data, label);
-    } catch (err: any) {
-      setError(err.message || 'Failed to process CDM prediction');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setActiveSample(file.name);
-    await executePrediction(file, file.name);
-    e.target.value = ''; // Reset file input
-  };
-
-  const loadSample = async (filename: string, label: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`/${filename}`);
-      if (!res.ok) throw new Error(`Could not fetch sample ${filename}`);
-      const blob = await res.blob();
-      await executePrediction(blob, label);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load sample CDM');
-      setLoading(false);
-    }
-  };
-
   const inspectHistoryItem = (item: PredictionHistoryItem) => {
-    setActiveSample(`${item.sampleName} (Historical Record)`);
     setResult({
       predicted_risk: item.predicted_risk,
       probability_pct: item.probability_pct,
@@ -125,9 +171,10 @@ export default function PredictionPage() {
       last_miss_distance: item.last_miss_distance,
       top_features: item.top_features || [],
       success: true,
-      is_historical: true
+      is_historical: true,
+      historical_title: item.sampleName
     });
-    window.scrollTo({ top: 400, behavior: 'smooth' });
+    window.scrollTo({ top: 450, behavior: 'smooth' });
   };
 
   const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
@@ -172,115 +219,117 @@ export default function PredictionPage() {
       <div className="max-w-5xl mb-8 border-b border-border/50 pb-4">
         <h1 className="text-2xl md:text-3xl font-mono text-textPrimary tracking-tight flex items-center gap-3">
           <Activity className="text-accent w-7 h-7" />
-          NEW CDM PREDICTION & TRIAGE
+          CDM INFERENCE & RISK ASSESSMENT LAB
         </h1>
         <p className="text-sm font-mono text-textSecondary mt-1">
-          Upload real-time Conjunction Data Messages (CDMs) or load pre-configured test scenarios to evaluate 98-feature pure physical risk scores.
+          Upload a Conjunction Data Message (CDM) file or stage a sample template, then click <strong>Run Prediction</strong> to evaluate collision risk.
         </p>
       </div>
 
       <div className="max-w-5xl space-y-8">
-        {/* Sample CDMs Quick-Loader Banner */}
-        <div className="border border-border/80 bg-surface/70 rounded-xl p-6 shadow-lg backdrop-blur">
-          <div className="flex items-center justify-between mb-3">
+        
+        {/* Step 1: Upload or Select CDM */}
+        <div className="border border-border bg-surface rounded-xl p-6 shadow-md">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-mono font-semibold text-textPrimary flex items-center gap-2">
-              <FileText className="w-4 h-4 text-accent" />
-              QUICK TEST BENCH (1-CLICK SAMPLE CDMS)
+              <Upload className="w-4 h-4 text-accent" />
+              STEP 1: UPLOAD OR SELECT CDM DATASET (.CSV)
             </h2>
             <span className="text-[11px] font-mono text-textSecondary bg-background/80 px-2.5 py-0.5 rounded border border-border/50">
-              Zero-leakage physical test cases
+              98 Pure Physical Astrodynamics Features
             </span>
           </div>
-          <p className="text-xs font-mono text-textSecondary mb-4">
-            Test the machine learning model immediately with pre-formatted ESA test scenarios:
-          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Sample 1: Individual CDM */}
-            <div className="border border-border/60 bg-background/60 rounded-lg p-4 flex flex-col justify-between hover:border-accent/40 transition-colors">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono font-bold text-amber-400">TYPE A: INDIVIDUAL CDM</span>
-                  <span className="text-[10px] font-mono text-textSecondary">1 Observation</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Custom Upload Zone */}
+            <div className="lg:col-span-7">
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-surfaceHover/80 transition-colors bg-background/40">
+                <div className="flex flex-col items-center justify-center p-4 text-center">
+                  <Upload className="w-7 h-7 text-textSecondary mb-2" />
+                  <p className="text-xs text-textSecondary font-mono">
+                    <span className="font-semibold text-accent underline">Click to browse your CDM file</span> or drag & drop here
+                  </p>
+                  <p className="text-[10px] text-textSecondary/70 font-mono mt-1">
+                    Accepts standard ESA Conjunction Data Messages in CSV format
+                  </p>
                 </div>
-                <p className="text-xs font-mono text-textSecondary mb-3">
-                  Single snapshot telemetry with tight miss distance (high-risk close encounter).
-                </p>
-              </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-border/40">
-                <button
-                  onClick={() => loadSample('sample_individual_cdm.csv', 'Individual CDM (Single Observation)')}
-                  disabled={loading}
-                  className="flex-1 bg-accent/20 hover:bg-accent/30 text-accent border border-accent/40 text-xs font-mono py-2 px-3 rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  Test Individual CDM
-                </button>
-                <a
-                  href="/sample_individual_cdm.csv"
-                  download="sample_individual_cdm.csv"
-                  className="p-2 border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded transition-colors"
-                  title="Download CSV"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </a>
-              </div>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept=".csv" 
+                  onChange={handleFileUpload} 
+                  disabled={stagingLoading || loading}
+                />
+              </label>
             </div>
 
-            {/* Sample 2: Sequential CDMs */}
-            <div className="border border-border/60 bg-background/60 rounded-lg p-4 flex flex-col justify-between hover:border-accent/40 transition-colors">
+            {/* Right: Sample Template Selectors */}
+            <div className="lg:col-span-5 flex flex-col justify-between space-y-3 bg-background/50 p-4 rounded-lg border border-border/60">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-mono font-bold text-emerald-400">TYPE B: SEQUENTIAL CDMS</span>
-                  <span className="text-[10px] font-mono text-textSecondary">5 Observations Timeline</span>
-                </div>
-                <p className="text-xs font-mono text-textSecondary mb-3">
-                  Multi-observation sequence tracking risk evolution from T-6.84d down to T-2.22d before TCA.
+                <span className="text-xs font-mono font-bold text-textPrimary block mb-1">
+                  Or Stage a Sample CDM File:
+                </span>
+                <p className="text-[11px] font-mono text-textSecondary">
+                  Select a pre-formatted test template to load into the staging area:
                 </p>
               </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-border/40">
-                <button
-                  onClick={() => loadSample('sample_sequential_cdms.csv', 'Sequential CDMs (5 Observations Timeline)')}
-                  disabled={loading}
-                  className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-xs font-mono py-2 px-3 rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  Test Sequential CDMs
-                </button>
-                <a
-                  href="/sample_sequential_cdms.csv"
-                  download="sample_sequential_cdms.csv"
-                  className="p-2 border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded transition-colors"
-                  title="Download CSV"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </a>
+
+              <div className="space-y-2">
+                {/* Template A: Individual */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => selectSampleTemplate('sample_individual_cdm.csv', 'Individual High-Risk Encounter')}
+                    disabled={stagingLoading || loading}
+                    className="flex-1 bg-surface hover:bg-surfaceHover border border-border text-left px-3 py-2 rounded text-xs font-mono text-textPrimary flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-amber-400 group-hover:text-accent" />
+                      <span>Individual CDM (1 Row)</span>
+                    </div>
+                    <span className="text-[10px] text-textSecondary group-hover:text-accent">Stage File</span>
+                  </button>
+                  <a
+                    href="/sample_individual_cdm.csv"
+                    download="sample_individual_cdm.csv"
+                    className="p-2 border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded transition-colors"
+                    title="Download individual CDM template"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                {/* Template B: Sequential */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => selectSampleTemplate('sample_sequential_cdms.csv', 'Sequential 5-Pass Encounter')}
+                    disabled={stagingLoading || loading}
+                    className="flex-1 bg-surface hover:bg-surfaceHover border border-border text-left px-3 py-2 rounded text-xs font-mono text-textPrimary flex items-center justify-between transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-emerald-400 group-hover:text-accent" />
+                      <span>Sequential CDMs (5 Rows)</span>
+                    </div>
+                    <span className="text-[10px] text-textSecondary group-hover:text-accent">Stage File</span>
+                  </button>
+                  <a
+                    href="/sample_sequential_cdms.csv"
+                    download="sample_sequential_cdms.csv"
+                    className="p-2 border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded transition-colors"
+                    title="Download sequential CDMs template"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Custom File Upload Dropzone */}
-        <div className="border border-border bg-surface rounded-xl p-6 shadow-md">
-          <h2 className="text-sm font-mono font-semibold text-textPrimary mb-3 flex items-center gap-2">
-            <Upload className="w-4 h-4 text-accent" />
-            CUSTOM CDM FILE UPLOAD
-          </h2>
-          <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-surfaceHover/80 transition-colors bg-background/40">
-            <div className="flex flex-col items-center justify-center pt-3 pb-3">
-              <Upload className="w-6 h-6 text-textSecondary mb-1.5" />
-              <p className="text-xs text-textSecondary font-mono">
-                <span className="font-semibold text-textPrimary">Click to upload custom CDM (.csv)</span> or drag and drop
-              </p>
-              <p className="text-[10px] text-textSecondary/70 font-mono mt-0.5">Supports single observation or multi-row sequential CDMs</p>
-            </div>
-            <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
-          </label>
-
-          {loading && (
+          {stagingLoading && (
             <div className="mt-4 p-3 bg-accent/10 border border-accent/30 rounded text-center font-mono text-accent text-xs flex items-center justify-center gap-2">
               <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
-              EVALUATING 98 PURE PHYSICAL FEATURES & COVARIANCE MATRICES...
+              READING & VALIDATING CDM CSV HEADERS...
             </div>
           )}
 
@@ -292,16 +341,95 @@ export default function PredictionPage() {
           )}
         </div>
 
-        {/* Prediction Results Display */}
+        {/* Step 2: Staged File & Execution Control */}
+        {stagedFile && (
+          <div className="border-2 border-accent/40 bg-surface/90 rounded-xl p-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-mono bg-accent/20 text-accent px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                    STAGED & READY
+                  </span>
+                  <span className="text-xs font-mono text-textSecondary">
+                    {(stagedFile.size / 1024).toFixed(1)} KB • {stagedFile.rowCount} observation{stagedFile.rowCount > 1 ? 's' : ''} detected
+                  </span>
+                </div>
+                <h3 className="text-base font-mono font-bold text-textPrimary flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-accent" />
+                  {stagedFile.name}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={clearStagedFile}
+                  disabled={loading}
+                  className="px-3 py-2 border border-border hover:bg-surfaceHover text-textSecondary hover:text-danger rounded text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Remove
+                </button>
+                <button
+                  type="button"
+                  onClick={executePrediction}
+                  disabled={loading}
+                  className="flex-1 md:flex-initial px-6 py-2.5 bg-accent hover:bg-accent/90 text-background font-mono font-bold text-sm rounded shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                      <span>ANALYZING ASTRODYNAMICS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>RUN PREDICTION</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick CSV Data Preview */}
+            <div className="bg-background/80 rounded-lg p-3 border border-border/40 overflow-x-auto">
+              <div className="text-[10px] font-mono text-textSecondary mb-2 flex items-center justify-between">
+                <span>CDM TELEMETRY PREVIEW (TOP COLUMNS):</span>
+                <span>{stagedFile.headers.length} Columns detected</span>
+              </div>
+              <table className="w-full text-left text-[11px] font-mono">
+                <thead>
+                  <tr className="border-b border-border/40 text-textSecondary">
+                    {stagedFile.headers.map((h, i) => (
+                      <th key={i} className="p-1.5 whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20 text-textPrimary">
+                  {stagedFile.previewRows.map((row, rIdx) => (
+                    <tr key={rIdx}>
+                      {row.slice(0, stagedFile.headers.length).map((val, cIdx) => (
+                        <td key={cIdx} className="p-1.5 whitespace-nowrap text-textSecondary/90">{val}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Prediction Results Display */}
         {result && (
           <div className="border border-border/80 bg-surface rounded-xl p-6 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-6">
               <div>
                 <span className="text-[10px] font-mono text-textSecondary uppercase tracking-widest">
-                  {result.is_historical ? 'HISTORICAL RECORD' : 'ACTIVE EVALUATION'}
+                  {result.is_historical ? 'HISTORICAL AUDIT RECORD' : 'EVALUATION REPORT'}
                 </span>
                 <h2 className="text-base font-mono font-bold text-textPrimary">
-                  {activeSample || 'CDM Prediction Results'}
+                  {result.historical_title || stagedFile?.name || 'CDM Prediction Results'}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -410,7 +538,7 @@ export default function PredictionPage() {
           </div>
         )}
 
-        {/* Prediction History Log */}
+        {/* Step 4: Prediction History Log */}
         <div className="border border-border/80 bg-surface rounded-xl p-6 shadow-xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/50 pb-4 mb-4">
             <div>
@@ -426,6 +554,7 @@ export default function PredictionPage() {
             {history.length > 0 && (
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <button
+                  type="button"
                   onClick={exportHistoryCSV}
                   className="px-3 py-1.5 bg-background border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Export History as CSV"
@@ -434,6 +563,7 @@ export default function PredictionPage() {
                   Export CSV
                 </button>
                 <button
+                  type="button"
                   onClick={clearAllHistory}
                   className="px-3 py-1.5 bg-danger/10 border border-danger/30 hover:bg-danger/20 text-danger rounded text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
                   title="Clear all saved history"
@@ -450,7 +580,7 @@ export default function PredictionPage() {
               <History className="w-8 h-8 text-textSecondary/40 mx-auto mb-2" />
               NO PREDICTION HISTORY YET
               <p className="text-[11px] text-textSecondary/60 mt-1">
-                Run a test above (Individual or Sequential CDM) to automatically log predictions here.
+                Upload or stage a CDM above and click "RUN PREDICTION" to log predictions here.
               </p>
             </div>
           ) : (
