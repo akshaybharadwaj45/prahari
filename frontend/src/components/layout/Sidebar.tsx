@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, List, TestTube, Activity, Settings, Sun, Moon, Globe } from 'lucide-react';
+import { LayoutDashboard, List, TestTube, Activity, Settings, Sun, Moon, Globe, Zap } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navigation = [
   { name: 'OVERVIEW', href: '/', icon: LayoutDashboard },
+  { name: 'PREDICTION LAB', href: '/prediction', icon: Zap },
   { name: 'EVENT ARCHIVE', href: '/events', icon: List },
   { name: 'EVENT LAB', href: '/events/0', icon: TestTube },
   { name: 'LEO GLOBE', href: '/globe', icon: Globe },

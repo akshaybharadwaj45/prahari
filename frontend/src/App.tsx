@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './components/layout/AppShell';
 import OverviewPage from './pages/OverviewPage';
+import PredictionPage from './pages/PredictionPage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import ModelLabPage from './pages/ModelLabPage';
@@ -26,6 +27,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<AppShell><OverviewPage /></AppShell>} />
+            <Route path="/prediction" element={<AppShell><PredictionPage /></AppShell>} />
             <Route path="/events" element={<AppShell><EventsPage /></AppShell>} />
             <Route path="/events/:eventId" element={<AppShell><EventDetailPage /></AppShell>} />
             <Route path="/globe" element={<AppShell><GlobePage /></AppShell>} />
