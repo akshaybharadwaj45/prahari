@@ -5,19 +5,20 @@ import json
 from typing import Dict, List, Any
 from .prediction_service import prediction_service
 
-STANDALONE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(STANDALONE_DIR, "data")
+CURRENT_SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR         = os.path.dirname(CURRENT_SERVICE_DIR)
+STANDALONE_DIR     = os.path.dirname(BACKEND_DIR)
+DATA_DIR           = os.path.join(STANDALONE_DIR, "data")
 
 class DatasetService:
     def __init__(self):
         self.df = None
         self.events_cache = None
         
-        # Check possible dataset paths
+        # Check possible full dataset paths
         possible_paths = [
-            os.path.join(os.path.dirname(os.path.dirname(STANDALONE_DIR)), "Prahari-dataset", "test_data.csv"),
             os.path.join(DATA_DIR, "test_data.csv"),
-            os.path.join(DATA_DIR, "sample_cdms.csv"),
+            os.path.join(os.path.dirname(STANDALONE_DIR), "Prahari-dataset", "test_data.csv"),
         ]
         self.dataset_path = None
         for p in possible_paths:
@@ -26,50 +27,52 @@ class DatasetService:
                 break
 
     def load_dataset(self):
-        if self.df is None:
-            if self.dataset_path and os.path.exists(self.dataset_path):
-                print(f"Loading dataset from {self.dataset_path}")
-                try:
-                    self.df = pd.read_csv(self.dataset_path)
-                    if 'event_id' in self.df.columns and 'time_to_tca' in self.df.columns:
-                        self.df = self.df.sort_values(['event_id', 'time_to_tca'], ascending=[True, False]).reset_index(drop=True)
-                    self.df = self.df.replace({np.nan: None})
-                    print("Dataset loaded successfully.")
-                    self._build_events_cache()
-                    return
-                except Exception as e:
-                    print(f"Note on CSV loading: {e}")
+        if self.events_cache is not None:
+            return
 
-            # Fallback to events_summary.json
-            summary_path = os.path.join(DATA_DIR, "events_summary.json")
-            if os.path.exists(summary_path):
-                print(f"Loading events from {summary_path}")
-                with open(summary_path) as f:
-                    raw_events = json.load(f)
+        if self.df is None and self.dataset_path and os.path.exists(self.dataset_path):
+            print(f"Loading dataset from {self.dataset_path}")
+            try:
+                self.df = pd.read_csv(self.dataset_path)
+                if 'event_id' in self.df.columns and 'time_to_tca' in self.df.columns:
+                    self.df = self.df.sort_values(['event_id', 'time_to_tca'], ascending=[True, False]).reset_index(drop=True)
+                self.df = self.df.replace({np.nan: None})
+                print("Dataset loaded successfully.")
+                self._build_events_cache()
+                return
+            except Exception as e:
+                print(f"Note on CSV loading: {e}")
+
+        # Fallback to events_summary.json (packaged in data/ for standalone clone)
+        summary_path = os.path.join(DATA_DIR, "events_summary.json")
+        if os.path.exists(summary_path):
+            print(f"Loading events from {summary_path}")
+            with open(summary_path, "r", encoding="utf-8") as f:
+                raw_events = json.load(f)
+                
+            events = []
+            for e in raw_events:
+                final_risk = float(e.get('final_risk', -10.0))
+                if final_risk >= -4:
+                    risk_band = "CRITICAL"
+                elif final_risk >= -5:
+                    risk_band = "HIGH"
+                elif final_risk >= -6:
+                    risk_band = "ELEVATED"
+                else:
+                    risk_band = "LOW"
                     
-                events = []
-                for e in raw_events:
-                    final_risk = float(e.get('final_risk', -10.0))
-                    if final_risk >= -4:
-                        risk_band = "CRITICAL"
-                    elif final_risk >= -5:
-                        risk_band = "HIGH"
-                    elif final_risk >= -6:
-                        risk_band = "ELEVATED"
-                    else:
-                        risk_band = "LOW"
-                        
-                    events.append({
-                        "event_id": str(e.get('event_id', '0')),
-                        "cdm_count": int(e.get('n_cdms', 4)),
-                        "highest_risk": final_risk,
-                        "risk_band": risk_band,
-                        "closest_miss_distance": float(e.get('miss_distance', 500.0)),
-                        "tca": float(e.get('time_to_tca', 2.0)),
-                        "object_type": str(e.get('c_object_type', 'DEBRIS'))
-                    })
-                self.events_cache = sorted(events, key=lambda x: x['highest_risk'], reverse=True)
-                print(f"Fallback events cache loaded with {len(self.events_cache)} events.")
+                events.append({
+                    "event_id": str(e.get('event_id', '0')),
+                    "cdm_count": int(e.get('n_cdms', 4)),
+                    "highest_risk": final_risk,
+                    "risk_band": risk_band,
+                    "closest_miss_distance": float(e.get('miss_distance', 500.0)),
+                    "tca": float(e.get('time_to_tca', 2.0)),
+                    "object_type": str(e.get('c_object_type', 'DEBRIS'))
+                })
+            self.events_cache = sorted(events, key=lambda x: x['highest_risk'], reverse=True)
+            print(f"Fallback events cache loaded with {len(self.events_cache)} events.")
 
     def _build_events_cache(self):
         print("Building events cache from DataFrame...")

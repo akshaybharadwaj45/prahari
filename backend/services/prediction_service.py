@@ -26,23 +26,15 @@ class PredictionService:
         try:
             # Load 100 raw dataset features model
             model_path = os.path.join(self.models_dir, "xgboost_raw_model.pkl")
-            if not os.path.exists(model_path):
-                model_path = os.path.join(self.models_dir, "xgboost_lean_model.pkl")
-                
             if os.path.exists(model_path):
                 self.model = joblib.load(model_path)
-                print(f"Prahari Raw Dataset Model loaded from {model_path}")
+                print(f"Prahari 100-Feature Model loaded from {model_path}")
             
             # Load feature columns
             cols_path = os.path.join(self.models_dir, "feature_columns_raw.json")
             if os.path.exists(cols_path):
                 with open(cols_path) as f:
                     self.feature_cols = json.load(f)
-            else:
-                cols_path = os.path.join(self.models_dir, "feature_columns.json")
-                if os.path.exists(cols_path):
-                    with open(cols_path) as f:
-                        self.feature_cols = json.load(f)
 
             # Load medians
             medians_path = os.path.join(self.models_dir, "feature_medians_raw.json")
@@ -55,11 +47,6 @@ class PredictionService:
             if os.path.exists(metrics_path):
                 with open(metrics_path) as f:
                     self.metrics = json.load(f)
-            else:
-                metrics_path = os.path.join(self.models_dir, "metrics.json")
-                if os.path.exists(metrics_path):
-                    with open(metrics_path) as f:
-                        self.metrics = json.load(f)
 
             return self.model is not None
         except Exception as e:

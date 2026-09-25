@@ -90,47 +90,5 @@ async def predict_cdm(file: UploadFile = File(...)):
 
 @app.get("/api/model-info")
 def get_model_info():
-    return {
-        "status": "ready",
-        "model_version": "lean_v1",
-        "model_name": "Prahari Lean XGBoost",
-        "feature_count": 9,
-        "features": [
-            "miss_to_sigma_ratio",
-            "hist_mean_risk",
-            "miss_distance",
-            "kinetic_energy",
-            "risk_slope",
-            "time_to_tca",
-            "sigma_3d",
-            "relative_speed",
-            "n_cdms"
-        ],
-        "stats": {
-            "honest_L": 0.5298,
-            "honest_F2": 0.7521,
-            "honest_MSE_HR": 0.3984,
-            "recall": 0.7191,
-            "precision": 0.9209,
-            "accuracy": 0.9719,
-            "r2": 0.8739,
-            "rmse": 3.5538,
-            "mae": 1.6214,
-            "n_features": 9
-        },
-        "raw_features": ["miss_distance", "relative_speed", "time_to_tca", "sigma_3d", "n_cdms"],
-        "engineered_features": ["miss_to_sigma_ratio", "kinetic_energy", "hist_mean_risk", "risk_slope"],
-        "raw_feature_count": 5,
-        "engineered_feature_count": 4,
-        "shap_importances": [
-            {"feature": "3D Uncertainty Overlap (miss/σ)", "importance": 0.28},
-            {"feature": "Historical Risk Mean (0..N-2)", "importance": 0.22},
-            {"feature": "3D Miss Distance (d_miss)", "importance": 0.16},
-            {"feature": "Collision Kinetic Energy (0.5 v²)", "importance": 0.12},
-            {"feature": "Risk Evolution Slope (d_risk/dt)", "importance": 0.09},
-            {"feature": "Time to TCA (days)", "importance": 0.06},
-            {"feature": "Combined 3D Uncertainty (σ)", "importance": 0.04},
-            {"feature": "Relative Encounter Speed", "importance": 0.02},
-            {"feature": "Tracking CDM Count", "importance": 0.01}
-        ]
-    }
+    return prediction_service.get_model_info()
+

@@ -49,35 +49,56 @@ This will automatically:
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure & Directory Guide
 
 ```text
 prahari-standalone/
-├── backend/                  # FastAPI REST API
-│   ├── services/
-│   │   ├── prediction_service.py # 100-feature inference engine
-│   │   └── dataset_service.py    # Multi-pass CDM event loader
-│   ├── main.py               # REST API endpoints (/api/predict-cdm, /api/events, /api/model-info)
-│   └── requirements.txt      # Python dependencies
-├── frontend/                 # React 18 + Vite + TypeScript Frontend
-│   ├── src/
-│   │   ├── pages/            # Overview, ModelLab, Prediction, EventDetail, Globe
-│   │   ├── components/three/ # Three.js 3D WebGL EncounterScene
-│   │   └── App.tsx           # Router and Navigation
-│   └── package.json          # Node dependencies
-├── models/                   # Serialized ML Model Artifacts
-│   ├── xgboost_raw_model.pkl # Trained XGBoost trees
-│   ├── feature_columns_raw.json # 100 dataset feature names
-│   ├── feature_medians_raw.json # Safe imputation medians
-│   └── metrics_raw.json      # Verified test set benchmarks
-├── docs/                     # Research Documentation
-│   ├── Prahari_Presentation.pptx # Complete 16:9 PowerPoint Slide Deck
-│   └── Prahari_Research_Paper.docx # Publication-Ready Research Paper
-├── src/                      # Standalone Training Pipeline
-│   ├── train.py              # End-to-end XGBoost model training script
-│   └── features.py           # Astrodynamic feature extraction logic
-├── START.bat                 # One-click startup script for Windows
-└── README.md                 # Project documentation
+│
+├── START.bat                  # 1-Click Launch Script (starts backend + frontend)
+├── README.md                  # Project Documentation & Architecture Guide
+├── requirements.txt           # Python Dependencies
+│
+├── backend/                   # FastAPI Asynchronous Microservice Backend
+│   ├── main.py                # REST API Endpoints (/api/predict-cdm, /api/events, /api/model-info)
+│   ├── requirements.txt       # Backend Python dependencies
+│   └── services/              # Core Services
+│       ├── dataset_service.py # Telemetry CDM ingestion & event database loader
+│       └── prediction_service.py # 100-Feature High-Recall XGBoost inference engine
+│
+├── frontend/                  # React 18 + TypeScript + Three.js 3D Mission Control
+│   ├── src/                   # React UI Source Code
+│   │   ├── pages/             # Mission Control Pages (Overview, ModelLab, Prediction, Globe, etc.)
+│   │   ├── components/        # Layout & Three.js 3D WebGL Encounter Scene
+│   │   ├── contexts/          # Auth & State Management
+│   │   └── types/             # TypeScript Conjunction & Telemetry Interfaces
+│   ├── public/                # 3D Earth Textures & Benchmark Figures
+│   ├── package.json           # Frontend dependencies (React, Vite, Three.js, Lucide, Tailwind)
+│   └── vite.config.ts         # Vite build configuration
+│
+├── data/                      # Mission Datasets & Telemetry Samples
+│   ├── events_summary.json    # Conjunction events metadata
+│   └── sample_cdms.csv        # Sample multi-pass CDMs for testing upload
+│
+├── models/                    # Trained Machine Learning Artifacts
+│   ├── xgboost_raw_model.pkl  # High-Recall XGBoost Model (92.70% recall at -6.0 threshold)
+│   ├── feature_columns_raw.json # 100 Native Telemetry Columns List
+│   ├── feature_medians_raw.json # Zero-Crash Pre-computed Median Imputation Matrix
+│   └── metrics_raw.json       # Empirical Benchmarking Results (2,167 held-out test events)
+│
+├── docs/                      # Presentation Deck, Research Paper & System Diagrams
+│   ├── Prahari_Presentation.pptx # 13-Slide Institutional PPT Presentation
+│   ├── Prahari_Research_Paper.docx # Academic Research Paper
+│   ├── system_design_diagram.png # 4-Stage Architecture Diagram
+│   ├── database_diagram.png   # 100-Parameter Telemetry Schema Diagram
+│   ├── class_diagram.png      # UML Component & Class Interaction Diagram
+│   ├── template_assets/       # 4K Master Template Backgrounds
+│   └── slide_previews/        # High-Res Previews of all 13 Slides (slide_1 to slide_13)
+│
+├── scripts/                   # Utility Scripts
+│   └── generate_ppt.py        # Automated PowerPoint Deck Builder
+│
+└── src/                       # Machine Learning Training Pipeline
+    └── train.py               # 100-Feature High-Recall Training & Validation Script
 ```
 
 ---
@@ -87,6 +108,7 @@ prahari-standalone/
 Full academic documentation is included inside the `docs/` folder:
 - 📊 **PowerPoint Slide Deck**: [`docs/Prahari_Presentation.pptx`](docs/Prahari_Presentation.pptx)
 - 📄 **Research Paper Word Doc**: [`docs/Prahari_Research_Paper.docx`](docs/Prahari_Research_Paper.docx)
+- 🖼️ **Architecture Diagrams**: [`docs/system_design_diagram.png`](docs/system_design_diagram.png), [`docs/database_diagram.png`](docs/database_diagram.png), [`docs/class_diagram.png`](docs/class_diagram.png)
 
 ---
 
