@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { 
   Upload, FileText, Play, CheckCircle2, AlertTriangle, 
   ShieldAlert, Activity, History, Trash2, Eye, FileSpreadsheet,
-  XCircle, ArrowRight
+  XCircle, ArrowRight, Box
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PredictionHistoryItem {
   id: string;
@@ -16,6 +17,7 @@ interface PredictionHistoryItem {
   risk_band: 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'LOW' | string;
   last_time_to_tca?: number | null;
   last_miss_distance?: number | null;
+  cdms?: any[];
 }
 
 interface StagedFile {
@@ -30,6 +32,7 @@ interface StagedFile {
 const STORAGE_KEY = 'prahari_prediction_history';
 
 export default function PredictionPage() {
+  const navigate = useNavigate();
   const [stagedFile, setStagedFile] = useState<StagedFile | null>(null);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -136,9 +139,53 @@ export default function PredictionPage() {
       risk_band: data.risk_band,
       last_time_to_tca: data.last_time_to_tca,
       last_miss_distance: data.last_miss_distance,
+      cdms: data.cdms || [],
     };
 
     setHistory(prev => [newItem, ...prev.slice(0, 49)]); // Keep latest 50
+  };
+
+  const viewIn3DEventLab = (targetData?: any) => {
+    const dataToUse = targetData || result;
+    if (!dataToUse) return;
+
+    const eventPayload = {
+      summary: {
+        event_id: 'CUSTOM',
+        cdm_count: dataToUse.cdms?.length || dataToUse.n_cdms_used || 1,
+        highest_risk: dataToUse.predicted_risk,
+        risk_band: dataToUse.risk_band,
+        closest_miss_distance: dataToUse.last_miss_distance ?? 500,
+        tca: dataToUse.last_time_to_tca ?? 1.5,
+        object_type: 'DEBRIS'
+      },
+      cdms: dataToUse.cdms && dataToUse.cdms.length > 0 ? dataToUse.cdms : [
+        {
+          time_to_tca: dataToUse.last_time_to_tca ?? 1.5,
+          miss_distance: dataToUse.last_miss_distance ?? 500,
+          relative_speed: 10200,
+          relative_position_r: 120,
+          relative_position_t: 450,
+          relative_position_n: 80,
+          relative_velocity_r: 0,
+          relative_velocity_t: 0,
+          relative_velocity_n: 0,
+          risk: dataToUse.predicted_risk,
+          predicted_risk: dataToUse.predicted_risk,
+          c_object_type: 'DEBRIS',
+          c_sigma_r: 15,
+          c_sigma_t: 50,
+          c_sigma_n: 10,
+          t_sigma_r: 10,
+          t_sigma_t: 40,
+          t_sigma_n: 8,
+          mahalanobis_distance: 4.5
+        }
+      ]
+    };
+
+    sessionStorage.setItem('prahari_3d_custom_cdm', JSON.stringify(eventPayload));
+    navigate('/events/custom');
   };
 
   const inspectHistoryItem = (item: PredictionHistoryItem) => {
@@ -150,6 +197,7 @@ export default function PredictionPage() {
       n_cdms_used: item.n_cdms_used,
       last_time_to_tca: item.last_time_to_tca,
       last_miss_distance: item.last_miss_distance,
+      cdms: item.cdms || [],
       success: true,
       is_historical: true,
       historical_title: item.sampleName
@@ -421,6 +469,15 @@ export default function PredictionPage() {
                 </div>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => viewIn3DEventLab(result)}
+              className="w-full mt-4 py-2.5 px-4 bg-accent hover:bg-accent/90 text-background font-mono font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+            >
+              <Box className="w-4 h-4" />
+              <span>VIEW ENCOUNTER IN 3D EVENT LAB</span>
+            </button>
           </div>
         )}
 
@@ -516,6 +573,14 @@ export default function PredictionPage() {
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); viewIn3DEventLab(item); }}
+                            className="p-1 hover:bg-accent/20 text-textSecondary hover:text-accent rounded transition-colors cursor-pointer"
+                            title="View in 3D Event Lab"
+                          >
+                            <Box className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); inspectHistoryItem(item); }}

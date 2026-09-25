@@ -82,7 +82,32 @@ async def predict_cdm(file: UploadFile = File(...)):
             "object_type":    last_cdm.get("c_object_type", "Unknown"),
             "n_cdms":         len(cdm_rows)
         }
-        # result already includes top_features with the 9 physical features
+
+        # Format full CDMs for 3D Event Lab visualization
+        formatted_cdms = []
+        for row in cdm_rows:
+            formatted_cdms.append({
+                "time_to_tca": float(row.get("time_to_tca", 0.0)) if pd.notna(row.get("time_to_tca")) else 0.0,
+                "miss_distance": float(row.get("miss_distance", 500.0)) if pd.notna(row.get("miss_distance")) else 500.0,
+                "relative_speed": float(row.get("relative_speed", 10000.0)) if pd.notna(row.get("relative_speed")) else 10000.0,
+                "relative_position_r": float(row.get("relative_position_r", 0.0)) if pd.notna(row.get("relative_position_r")) else 0.0,
+                "relative_position_t": float(row.get("relative_position_t", 0.0)) if pd.notna(row.get("relative_position_t")) else 0.0,
+                "relative_position_n": float(row.get("relative_position_n", 0.0)) if pd.notna(row.get("relative_position_n")) else 0.0,
+                "relative_velocity_r": float(row.get("relative_velocity_r", 0.0)) if pd.notna(row.get("relative_velocity_r")) else 0.0,
+                "relative_velocity_t": float(row.get("relative_velocity_t", 0.0)) if pd.notna(row.get("relative_velocity_t")) else 0.0,
+                "relative_velocity_n": float(row.get("relative_velocity_n", 0.0)) if pd.notna(row.get("relative_velocity_n")) else 0.0,
+                "risk": float(row.get("risk", result["predicted_risk"])) if pd.notna(row.get("risk")) else float(result["predicted_risk"]),
+                "predicted_risk": float(result["predicted_risk"]),
+                "c_object_type": str(row.get("c_object_type", "DEBRIS")),
+                "c_sigma_r": float(row.get("c_sigma_r", 10.0)) if pd.notna(row.get("c_sigma_r")) else 10.0,
+                "c_sigma_t": float(row.get("c_sigma_t", 50.0)) if pd.notna(row.get("c_sigma_t")) else 50.0,
+                "c_sigma_n": float(row.get("c_sigma_n", 10.0)) if pd.notna(row.get("c_sigma_n")) else 10.0,
+                "t_sigma_r": float(row.get("t_sigma_r", 10.0)) if pd.notna(row.get("t_sigma_r")) else 10.0,
+                "t_sigma_t": float(row.get("t_sigma_t", 50.0)) if pd.notna(row.get("t_sigma_t")) else 50.0,
+                "t_sigma_n": float(row.get("t_sigma_n", 10.0)) if pd.notna(row.get("t_sigma_n")) else 10.0,
+                "mahalanobis_distance": float(row.get("mahalanobis_distance", 5.0)) if pd.notna(row.get("mahalanobis_distance")) else 5.0,
+            })
+        result["cdms"] = formatted_cdms
         return result
 
     except Exception as e:

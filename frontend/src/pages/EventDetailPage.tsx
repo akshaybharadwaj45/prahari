@@ -27,6 +27,16 @@ export default function EventDetailPage() {
   const { data, error, isLoading } = useQuery({
     queryKey: ['event', eventId],
     queryFn: async () => {
+      if (eventId === 'custom') {
+        const stored = sessionStorage.getItem('prahari_3d_custom_cdm');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.cdms && parsed.cdms.length > 0) {
+            parsed.cdms.sort((a: any, b: any) => b.time_to_tca - a.time_to_tca);
+          }
+          return parsed;
+        }
+      }
       const res = await fetch(`http://localhost:8000/api/events/${eventId}`);
       if (!res.ok) throw new Error("Event not found");
       const d = await res.json();
@@ -120,7 +130,7 @@ export default function EventDetailPage() {
               onClick={() => setShowEventSelector(!showEventSelector)}
               className="flex items-center gap-3 px-4 py-2 bg-surface/50 backdrop-blur-md border border-border/50 rounded-lg hover:bg-surface/80 transition-colors"
             >
-              <div className="text-lg font-mono text-textPrimary">EV-{summary.event_id}</div>
+              <div className="text-lg font-mono text-textPrimary">{summary.event_id === 'CUSTOM' ? 'CUSTOM UPLOAD' : `EV-${summary.event_id}`}</div>
               <span className={`px-2 py-0.5 text-[10px] font-mono rounded border ${computedRiskBand === 'CRITICAL' ? 'border-danger text-danger bg-danger/10' : 'border-accent text-accent bg-accent/10'}`}>
                 {computedRiskBand}
               </span>

@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { ShieldAlert, AlertTriangle, AlertCircle, CheckCircle, Database, Upload, FileBarChart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShieldAlert, AlertTriangle, AlertCircle, CheckCircle, Database, Upload, FileBarChart, Box } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatRiskPct, getRiskBand } from '../utils';
 import { useQuery } from '@tanstack/react-query';
 
+const STORAGE_KEY = 'prahari_prediction_history';
+
 export default function OverviewPage() {
+  const navigate = useNavigate();
   const { data, error, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
@@ -18,6 +21,28 @@ export default function OverviewPage() {
   const [predictResult, setPredictResult] = useState<any>(null);
   const [predictError, setPredictError] = useState<string | null>(null);
   const [predictLoading, setPredictLoading] = useState(false);
+
+  const saveToHistory = (resData: any, fileName: string) => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const prev = saved ? JSON.parse(saved) : [];
+      const newItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        timestamp: new Date().toLocaleString(),
+        sampleName: fileName,
+        n_cdms_used: resData.n_cdms_used || resData.metrics?.n_cdms || 1,
+        predicted_risk: resData.predicted_risk,
+        probability_pct: resData.probability_pct,
+        collision_probability: resData.collision_probability,
+        risk_band: resData.risk_band || getRiskBand(resData.predicted_risk),
+        last_time_to_tca: resData.last_time_to_tca ?? resData.metrics?.time_to_tca,
+        last_miss_distance: resData.last_miss_distance ?? resData.metrics?.miss_distance,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([newItem, ...prev.slice(0, 49)]));
+    } catch (e) {
+      console.error('Failed to save to history', e);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,11 +65,30 @@ export default function OverviewPage() {
         throw new Error(resData.error || resData.detail || 'Prediction failed');
       }
       setPredictResult(resData);
+      saveToHistory(resData, file.name);
     } catch (err: any) {
       setPredictError(err.message);
     } finally {
       setPredictLoading(false);
     }
+  };
+
+  const viewIn3DEventLab = () => {
+    if (!predictResult) return;
+    const eventPayload = {
+      summary: {
+        event_id: 'CUSTOM',
+        cdm_count: predictResult.cdms?.length || predictResult.n_cdms_used || 1,
+        highest_risk: predictResult.predicted_risk,
+        risk_band: predictResult.risk_band || getRiskBand(predictResult.predicted_risk),
+        closest_miss_distance: predictResult.last_miss_distance ?? predictResult.metrics?.miss_distance ?? 500,
+        tca: predictResult.last_time_to_tca ?? predictResult.metrics?.time_to_tca ?? 1.5,
+        object_type: predictResult.metrics?.object_type ?? 'DEBRIS'
+      },
+      cdms: predictResult.cdms || []
+    };
+    sessionStorage.setItem('prahari_3d_custom_cdm', JSON.stringify(eventPayload));
+    navigate('/events/custom');
   };
 
   if (error) return <div className="p-8 text-danger font-mono">{error.message}</div>;
@@ -147,6 +191,15 @@ export default function OverviewPage() {
                   </div>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={viewIn3DEventLab}
+                className="w-full mt-4 py-2.5 px-4 bg-accent hover:bg-accent/90 text-background font-mono font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              >
+                <Box className="w-4 h-4" />
+                <span>VIEW ENCOUNTER IN 3D EVENT LAB</span>
+              </button>
             </div>
           )}
         </div>
