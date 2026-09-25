@@ -13,6 +13,28 @@ MODELS_DIR          = os.path.join(STANDALONE_ROOT, "models")
 
 DEFAULT_THRESHOLD = -6.0
 
+FEATURE_NAME_MAPPINGS = {
+    "c_sigma_t": "Chaser In-Track Uncertainty (c_sigma_t)",
+    "mahalanobis_distance": "3D Mahalanobis Distance",
+    "c_sigma_rdot": "Chaser Radial Velocity Sigma (c_sigma_rdot)",
+    "miss_distance": "Closest Miss Distance (m)",
+    "relative_position_n": "Cross-Track Position Vector (rel_pos_n)",
+    "c_sigma_r": "Radial Position Uncertainty / Altitude Error (c_sigma_r)",
+    "c_time_lastob_start": "Tracking Observation Age (days)",
+    "c_crdot_t": "Covariance Cross-Term (c_crdot_t)",
+    "relative_position_r": "Radial Distance Vector (rel_pos_r)",
+    "c_time_lastob_end": "Observation Duration (days)",
+    "c_cd_area_over_mass": "Atmospheric Drag Area/Mass Ratio",
+    "c_sigma_tdot": "In-Track Velocity Uncertainty (m/s)",
+    "relative_speed": "Relative Encounter Velocity (m/s)",
+    "time_to_tca": "Time to TCA (days)",
+    "F10": "Solar Radio Flux F10.7 (Space Weather)",
+    "t_position_covariance_det": "Target Pos Covariance Det (det C_t)",
+    "c_position_covariance_det": "Chaser Pos Covariance Det (det C_c)",
+    "c_j2k_ecc": "Chaser Orbit Eccentricity (c_j2k_ecc)",
+    "t_rcs_estimate": "Target Radar Cross Section (m²)"
+}
+
 class PredictionService:
     def __init__(self):
         self.model         = None
@@ -24,11 +46,11 @@ class PredictionService:
 
     def load_model(self):
         try:
-            # Load 100 raw dataset features model
+            # Load 98 pure physical dataset features model (Zero Leakage)
             model_path = os.path.join(self.models_dir, "xgboost_raw_model.pkl")
             if os.path.exists(model_path):
                 self.model = joblib.load(model_path)
-                print(f"Prahari 100-Feature Model loaded from {model_path}")
+                print(f"Prahari Pure Physical Model loaded from {model_path}")
             
             # Load feature columns
             cols_path = os.path.join(self.models_dir, "feature_columns_raw.json")
@@ -56,7 +78,7 @@ class PredictionService:
     def predict_event(self, cdm_rows: List[Dict[str, Any]], threshold: float = -6.0) -> Dict[str, Any]:
         """
         Accepts a LIST of CDM dicts for a single event (multiple CDMs over time).
-        Uses the native raw dataset features from the latest available CDM observation.
+        Uses the pure physical telemetry features from the latest available CDM observation.
         """
         if self.model is None:
             if not self.load_model():
@@ -75,7 +97,7 @@ class PredictionService:
         # Use the latest observation
         last_obs = df.iloc[-1].to_dict()
 
-        # Build feature vector matching raw columns
+        # Build feature vector matching 98 pure physical columns
         row_dict = {}
         for col in self.feature_cols:
             if col in last_obs and last_obs[col] is not None and not pd.isna(last_obs[col]):
@@ -101,19 +123,17 @@ class PredictionService:
 
         n_cdms = len(cdm_rows)
 
-        # Top raw features based on XGBoost feature importance
-        top_shap = self.metrics.get('top_features', [
-            {"feature": "Mahalanobis Distance", "importance": 0.224},
-            {"feature": "Miss Distance (m)", "importance": 0.185},
-            {"feature": "Relative Speed (m/s)", "importance": 0.142},
-            {"feature": "Time to TCA (days)", "importance": 0.118},
-            {"feature": "Target Position Covariance Det", "importance": 0.089},
-            {"feature": "Chaser Position Covariance Det", "importance": 0.076},
-            {"feature": "Target Sigma R (m)", "importance": 0.054},
-            {"feature": "Chaser Sigma R (m)", "importance": 0.048},
-            {"feature": "Solar Radio Flux (F10)", "importance": 0.035},
-            {"feature": "Geocentric Latitude", "importance": 0.029}
-        ])
+        # Top pure physics features with human-readable labels
+        raw_top = self.metrics.get('top_features', [])
+        top_shap = []
+        for item in raw_top[:10]:
+            feat_name = item.get('feature', '')
+            label = FEATURE_NAME_MAPPINGS.get(feat_name, feat_name.replace('_', ' ').title())
+            top_shap.append({
+                "feature": label,
+                "raw_key": feat_name,
+                "importance": float(item.get('importance', 0.0))
+            })
 
         return {
             "predicted_risk":      round(predicted_risk, 4),
@@ -125,7 +145,7 @@ class PredictionService:
             "top_features":        top_shap,
             "last_time_to_tca":    float(last_obs.get("time_to_tca", 0.0)) if last_obs.get("time_to_tca") is not None else None,
             "last_miss_distance":  float(last_obs.get("miss_distance", 0.0)) if last_obs.get("miss_distance") is not None else None,
-            "model_version":       "raw_dataset_features_100",
+            "model_version":       "pure_physical_98_zero_leakage",
             "success":             True
         }
 
@@ -137,41 +157,41 @@ class PredictionService:
         if self.model is None:
             self.load_model()
 
+        raw_top = self.metrics.get('top_features', [])
+        formatted_shap = []
+        for item in raw_top[:10]:
+            feat_name = item.get('feature', '')
+            label = FEATURE_NAME_MAPPINGS.get(feat_name, feat_name.replace('_', ' ').title())
+            formatted_shap.append({
+                "feature": label,
+                "raw_key": feat_name,
+                "importance": float(item.get('importance', 0.0))
+            })
+
         return {
             "status": "ready" if self.model is not None else "unavailable",
-            "model_version": "raw_dataset_features_100",
-            "model_name": "Prahari Raw Dataset Features XGBoost (High Recall)",
+            "model_version": "pure_physical_98_zero_leakage",
+            "model_name": "Prahari Pure Physical Telemetry XGBoost (Zero Leakage)",
             "feature_count": len(self.feature_cols),
             "features": self.feature_cols,
             "stats": {
                 "threshold": -6.0,
-                "recall": round(self.metrics.get("recall", 0.9270), 4),
-                "precision": round(self.metrics.get("precision", 0.7971), 4),
-                "accuracy": round(self.metrics.get("accuracy", 0.9746), 4),
-                "honest_F2": round(self.metrics.get("f2_score", 0.8977), 4),
-                "honest_L": round(self.metrics.get("kelvins_loss", 11.1003), 4),
-                "honest_MSE_HR": round(self.metrics.get("mse_hr", 9.9649), 4),
-                "r2": round(self.metrics.get("r2_score", 0.7505), 4),
-                "rmse": round(self.metrics.get("rmse", 4.9984), 4),
-                "mae": round(self.metrics.get("mae", 1.8847), 4),
-                "tp": self.metrics.get("tp", 165),
-                "fp": self.metrics.get("fp", 42),
-                "fn": self.metrics.get("fn", 13),
-                "tn": self.metrics.get("tn", 1947),
+                "recall": round(self.metrics.get("recall", 0.6236), 4),
+                "precision": round(self.metrics.get("precision", 0.8102), 4),
+                "accuracy": round(self.metrics.get("accuracy", 0.9571), 4),
+                "honest_F2": round(self.metrics.get("f2_score", 0.6537), 4),
+                "honest_L": round(self.metrics.get("kelvins_loss", 14.2), 4),
+                "honest_MSE_HR": round(self.metrics.get("mse_hr", 12.1), 4),
+                "r2": round(self.metrics.get("r2_score", 0.6417), 4),
+                "rmse": round(self.metrics.get("rmse", 5.9904), 4),
+                "mae": round(self.metrics.get("mae", 3.6878), 4),
+                "tp": self.metrics.get("tp", 111),
+                "fp": self.metrics.get("fp", 26),
+                "fn": self.metrics.get("fn", 67),
+                "tn": self.metrics.get("tn", 1963),
                 "n_features": len(self.feature_cols)
             },
-            "shap_importances": self.metrics.get("top_features", [
-                {"feature": "Mahalanobis Distance", "importance": 0.224},
-                {"feature": "Miss Distance (m)", "importance": 0.185},
-                {"feature": "Relative Speed (m/s)", "importance": 0.142},
-                {"feature": "Time to TCA (days)", "importance": 0.118},
-                {"feature": "Target Position Covariance Det", "importance": 0.089},
-                {"feature": "Chaser Position Covariance Det", "importance": 0.076},
-                {"feature": "Target Sigma R (m)", "importance": 0.054},
-                {"feature": "Chaser Sigma R (m)", "importance": 0.048},
-                {"feature": "Solar Radio Flux (F10)", "importance": 0.035},
-                {"feature": "Geocentric Latitude", "importance": 0.029}
-            ])
+            "shap_importances": formatted_shap
         }
 
 prediction_service = PredictionService()

@@ -1,8 +1,6 @@
 [
   "time_to_tca",
   "mission_id",
-  "max_risk_estimate",
-  "max_risk_scaling",
   "miss_distance",
   "relative_speed",
   "relative_position_r",

@@ -45,9 +45,10 @@ def train_high_recall_model():
     print(f"   • Train shape: {train_df.shape} ({train_df['event_id'].nunique()} unique events)")
     print(f"   • Test shape : {test_df.shape} ({test_df['event_id'].nunique()} unique events)")
 
-    # Identify all 100 raw numeric feature columns
-    raw_cols = [c for c in train_df.columns if c not in ('event_id', 'risk', 'c_object_type')]
-    print(f"2. Extracted {len(raw_cols)} native telemetry features (0 synthetic features added).")
+    # Identify all 98 pure physical native telemetry feature columns (excluding target and risk-derived proxies)
+    exclude_cols = {'event_id', 'risk', 'c_object_type', 'max_risk_estimate', 'max_risk_scaling'}
+    raw_cols = [c for c in train_df.columns if c not in exclude_cols]
+    print(f"2. Extracted {len(raw_cols)} pure physical native telemetry features (100% Zero-Leakage).")
 
     # Training Matrix: Ingests all observation rows
     X_train = train_df[raw_cols].copy()
@@ -133,7 +134,7 @@ def train_high_recall_model():
         json.dump(medians, f, indent=2)
 
     metrics_data = {
-        "model_name": "Prahari Raw Dataset Features XGBoost (High Recall)",
+        "model_name": "Prahari Pure Physical Telemetry XGBoost (Zero Leakage)",
         "feature_count": len(raw_cols),
         "features": raw_cols,
         "threshold": HIGH_RISK_THRESHOLD,

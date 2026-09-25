@@ -1,8 +1,6 @@
 {
   "time_to_tca": 3.297623755787037,
   "mission_id": 5.0,
-  "max_risk_estimate": -6.326610421811695,
-  "max_risk_scaling": 31.74490404185422,
   "miss_distance": 12439.0,
   "relative_speed": 12262.0,
   "relative_position_r": -27.3,

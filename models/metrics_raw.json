@@ -1,11 +1,9 @@
 {
-  "model_name": "Prahari Raw Dataset Features XGBoost (High Recall)",
-  "feature_count": 100,
+  "model_name": "Prahari Pure Physical Telemetry XGBoost (Zero Leakage)",
+  "feature_count": 98,
   "features": [
     "time_to_tca",
     "mission_id",
-    "max_risk_estimate",
-    "max_risk_scaling",
     "miss_distance",
     "relative_speed",
     "relative_position_r",
@@ -104,68 +102,68 @@
     "AP"
   ],
   "threshold": -6.0,
-  "accuracy": 0.9746192893401016,
-  "recall": 0.9269662921348315,
-  "precision": 0.7971014492753623,
-  "f2_score": 0.8977149075081611,
-  "mse_hr": 9.964898736204182,
-  "kelvins_loss": 11.10029325887472,
-  "r2_score": 0.7505204837983811,
-  "rmse": 4.998397507605898,
-  "mae": 1.8847314491691136,
-  "tp": 165,
-  "fp": 42,
-  "fn": 13,
-  "tn": 1947,
-  "training_time": 12.010982036590576,
+  "accuracy": 0.9570835256114444,
+  "recall": 0.6235955056179775,
+  "precision": 0.8102189781021898,
+  "f2_score": 0.6537102473498233,
+  "mse_hr": 10.382570170951428,
+  "kelvins_loss": 15.882526261509485,
+  "r2_score": 0.6416711446460797,
+  "rmse": 5.990378111558925,
+  "mae": 3.6878246064884643,
+  "tp": 111,
+  "fp": 26,
+  "fn": 67,
+  "tn": 1963,
+  "training_time": 4.57571816444397,
   "top_features": [
     {
-      "feature": "max_risk_scaling",
-      "importance": 0.6866
-    },
-    {
-      "feature": "max_risk_estimate",
-      "importance": 0.0567
-    },
-    {
       "feature": "c_sigma_t",
-      "importance": 0.0542
+      "importance": 0.1677
     },
     {
       "feature": "mahalanobis_distance",
-      "importance": 0.05
+      "importance": 0.1465
     },
     {
-      "feature": "t_span",
-      "importance": 0.016
-    },
-    {
-      "feature": "c_sigma_r",
-      "importance": 0.0124
+      "feature": "c_sigma_rdot",
+      "importance": 0.0807
     },
     {
       "feature": "miss_distance",
-      "importance": 0.0111
+      "importance": 0.0475
+    },
+    {
+      "feature": "relative_position_n",
+      "importance": 0.0421
+    },
+    {
+      "feature": "c_sigma_r",
+      "importance": 0.0403
     },
     {
       "feature": "c_time_lastob_start",
-      "importance": 0.0082
+      "importance": 0.034
+    },
+    {
+      "feature": "c_crdot_t",
+      "importance": 0.0325
     },
     {
       "feature": "relative_position_r",
-      "importance": 0.008
+      "importance": 0.0226
     },
     {
-      "feature": "c_j2k_ecc",
-      "importance": 0.0066
+      "feature": "c_time_lastob_end",
+      "importance": 0.0207
     },
     {
-      "feature": "t_sigma_t",
-      "importance": 0.0066
+      "feature": "c_cd_area_over_mass",
+      "importance": 0.0202
     },
     {
-      "feature": "t_rcs_estimate",
-      "importance": 0.0061
+      "feature": "c_sigma_tdot",
+      "importance": 0.0175
     }
   ]
 }

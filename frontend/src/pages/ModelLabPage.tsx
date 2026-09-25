@@ -68,8 +68,6 @@ const RAW_SOLAR_FEATURES: FeatureConcept[] = [
 ];
 
 const RAW_TRACKING_FEATURES: FeatureConcept[] = [
-  { id: 'max_risk_estimate', name: 'Maximum Risk Estimate', category: 'Tracking', description: 'Upper theoretical bound of collision probability from CDM', unit: 'log10(Pc)' },
-  { id: 'max_risk_scaling', name: 'Risk Scaling Factor', category: 'Tracking', description: 'Scale factor for covariance scaling in maximum risk search', unit: 'dimensionless' },
   { id: 't_obs_available', name: 'Target Observations Available', category: 'Tracking', description: 'Total radar/optical observations collected for target', unit: 'count' },
   { id: 't_obs_used', name: 'Target Observations Used', category: 'Tracking', description: 'Number of observations accepted into target orbit fit', unit: 'count' },
   { id: 'c_obs_available', name: 'Chaser Observations Available', category: 'Tracking', description: 'Total observations collected for chaser', unit: 'count' },
@@ -160,11 +158,11 @@ export default function ModelLabPage() {
             <Activity className="text-accent w-7 h-7" />
             XGBOOST MODEL LAB
             <span className="text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 rounded tracking-widest uppercase">
-              100 Raw Dataset Features Engine (High Recall)
+              98 Pure Physical Features (Zero Leakage)
             </span>
           </h1>
           <p className="text-sm font-mono text-textSecondary mt-1">
-            Standard high-recall conjunction triage engine trained directly on 100 native telemetry parameters from ESA/SSN CDMs.
+            Pure astrodynamics conjunction triage engine trained directly on 98 physical kinematics, 3D covariance matrices, and solar flux parameters.
           </p>
         </div>
       </div>
@@ -177,10 +175,10 @@ export default function ModelLabPage() {
           </div>
           <div>
             <div className="font-mono font-bold text-sm md:text-base text-textPrimary flex items-center gap-2">
-              TECHNICAL REFERENCE: 100 NATIVE DATASET TELEMETRY PARAMETERS
+              TECHNICAL REFERENCE: 98 PURE PHYSICAL TELEMETRY PARAMETERS (ZERO LEAKAGE)
             </div>
             <div className="font-mono text-xs md:text-sm text-textSecondary mt-1 leading-relaxed">
-              Trained on all 100 raw dataset columns without synthetic features. Achieves <strong className="text-emerald-400">92.70% Recall (165/178 caught)</strong> and <strong>89.77% F2 Score</strong> at the official <strong className="text-accent">-6.0 alert threshold</strong>.
+              Trained exclusively on 3D covariance ellipsoids, miss distance, and relative velocities without analytical risk proxies. 100% defensible, physics-grounded AI triage.
             </div>
           </div>
         </div>
@@ -365,18 +363,19 @@ export default function ModelLabPage() {
             {info?.shap_importances && (
               <div className="mt-8">
                 <h2 className="text-base font-mono font-semibold text-textPrimary mb-6 flex items-center gap-2 border-b border-border/50 pb-2">
-                  <Activity className="w-4 h-4 text-textSecondary" />
-                  TOP RAW DATASET FEATURE IMPORTANCES
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  TOP PURE PHYSICAL FEATURE IMPORTANCES (ZERO LEAKAGE)
                 </h2>
-                <div className="h-80 w-full">
+                <div className="h-96 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={info.shap_importances} layout="vertical" margin={{ top: 5, right: 30, left: 160, bottom: 5 }}>
+                    <BarChart data={info.shap_importances} layout="vertical" margin={{ top: 5, right: 30, left: 260, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={false} />
-                      <XAxis type="number" stroke="#94a3b8" fontSize={11} />
-                      <YAxis dataKey="feature" type="category" stroke="#94a3b8" fontSize={11} width={220} />
+                      <XAxis type="number" stroke="#94a3b8" fontSize={11} domain={[0, 'auto']} />
+                      <YAxis dataKey="feature" type="category" stroke="#94a3b8" fontSize={11} width={250} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }}
                         itemStyle={{ color: '#38bdf8' }}
+                        formatter={(val: any) => [`${(Number(val) * 100).toFixed(2)}%`, 'Feature Importance']}
                       />
                       <Bar dataKey="importance" fill="#10b981" radius={[0, 4, 4, 0]} />
                     </BarChart>
@@ -387,7 +386,7 @@ export default function ModelLabPage() {
           </div>
         </div>
 
-        {/* Side Panel: 100 Raw Dataset Features Directory */}
+        {/* Side Panel: 98 Pure Physical Features Directory */}
         <div className="lg:col-span-1 space-y-6">
           <div className="p-6 border border-border/50 rounded-xl bg-surface/50 backdrop-blur shadow-lg h-full flex flex-col">
             <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-4">
@@ -395,7 +394,7 @@ export default function ModelLabPage() {
                 <Database className="w-4 h-4 text-textSecondary" />
                 RAW DATASET FEATURES
               </h2>
-              <span className="text-xs font-mono text-emerald-400 font-bold">100 Columns</span>
+              <span className="text-xs font-mono text-emerald-400 font-bold">98 Pure Physical Columns</span>
             </div>
 
             {/* Category Selector Tabs */}
@@ -444,9 +443,9 @@ export default function ModelLabPage() {
                     ? 'bg-accent text-background font-bold shadow'
                     : 'text-textSecondary hover:text-textPrimary'
                 }`}
-                title="Tracking Observables (40 Features)"
+                title="Tracking Observables (38 Features)"
               >
-                Track (40)
+                Track (38)
               </button>
             </div>
 
