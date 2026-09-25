@@ -93,21 +93,21 @@ def build_pdf():
     h1_style = ParagraphStyle(
         'Heading1_Custom',
         fontName='Helvetica-Bold',
-        fontSize=12,
+        fontSize=11.5,
         leading=15,
         textColor=colors.HexColor('#0369a1'),
-        spaceBefore=12,
-        spaceAfter=5,
+        spaceBefore=11,
+        spaceAfter=4,
         keepWithNext=True
     )
 
     h2_style = ParagraphStyle(
         'Heading2_Custom',
         fontName='Helvetica-Bold',
-        fontSize=9.5,
-        leading=13,
+        fontSize=9,
+        leading=12.5,
         textColor=colors.HexColor('#1e293b'),
-        spaceBefore=7,
+        spaceBefore=6,
         spaceAfter=3,
         keepWithNext=True
     )
@@ -115,49 +115,49 @@ def build_pdf():
     body_style = ParagraphStyle(
         'Body_Custom',
         fontName='Helvetica',
-        fontSize=8,
-        leading=11.5,
+        fontSize=7.8,
+        leading=11,
         textColor=colors.HexColor('#334155'),
-        spaceAfter=5
+        spaceAfter=4
     )
 
     bullet_style = ParagraphStyle(
         'Bullet_Custom',
         fontName='Helvetica',
-        fontSize=8,
-        leading=11.5,
+        fontSize=7.8,
+        leading=11,
         textColor=colors.HexColor('#334155'),
         leftIndent=10,
         firstLineIndent=-6,
-        spaceAfter=3
+        spaceAfter=2.5
     )
 
     q_style = ParagraphStyle(
         'Q_Style',
         fontName='Helvetica-Bold',
-        fontSize=8.5,
-        leading=12,
+        fontSize=8,
+        leading=11,
         textColor=colors.HexColor('#0f172a'),
-        spaceBefore=5,
-        spaceAfter=2,
+        spaceBefore=4,
+        spaceAfter=1.5,
         keepWithNext=True
     )
 
     a_style = ParagraphStyle(
         'A_Style',
         fontName='Helvetica',
-        fontSize=8,
-        leading=11.5,
+        fontSize=7.8,
+        leading=11,
         textColor=colors.HexColor('#334155'),
         leftIndent=8,
-        spaceAfter=5
+        spaceAfter=4
     )
 
     table_header_style = ParagraphStyle(
         'TableHeader',
         fontName='Helvetica-Bold',
-        fontSize=7.5,
-        leading=9.5,
+        fontSize=7.2,
+        leading=9,
         textColor=colors.white,
         alignment=0
     )
@@ -165,16 +165,16 @@ def build_pdf():
     table_cell_style = ParagraphStyle(
         'TableCell',
         fontName='Helvetica',
-        fontSize=7,
-        leading=9.5,
+        fontSize=6.8,
+        leading=9,
         textColor=colors.HexColor('#1e293b')
     )
 
     table_cell_bold = ParagraphStyle(
         'TableCellBold',
         fontName='Helvetica-Bold',
-        fontSize=7,
-        leading=9.5,
+        fontSize=6.8,
+        leading=9,
         textColor=colors.HexColor('#0f172a')
     )
 
@@ -182,7 +182,7 @@ def build_pdf():
 
     # Title & Metadata Banner
     story.append(Paragraph("PROJECT PRAHARI (प्रहारी)", title_style))
-    story.append(Paragraph("<b>AI Satellite Collision Assessment & Autonomous Risk Triage Engine</b><br/>Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance & Viva Guide", subtitle_style))
+    story.append(Paragraph("<b>AI Satellite Collision Assessment & Autonomous Risk Triage Engine</b><br/>Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance, Sample CDMs & Viva Guide", subtitle_style))
     story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#0284c7"), spaceAfter=8))
 
     # =========================================================================
@@ -199,7 +199,7 @@ def build_pdf():
         [Paragraph("<b>backend/services/<br/>dataset_service.py</b>", table_cell_bold), Paragraph("Data Service", table_cell_style), Paragraph("Loads pre-indexed 2,167 historical events from <code>data/events_summary.json</code>, handles standalone zero-database offline fallback, and builds CDM playback timelines.", table_cell_style)],
         [Paragraph("<b>frontend/src/pages/<br/>OverviewPage.tsx</b>", table_cell_bold), Paragraph("React Component", table_cell_style), Paragraph("Mission control dashboard displaying live event counters (Total, Critical, High, Elevated, Low), risk distribution charts, and quick CDM file dropzone.", table_cell_style)],
         [Paragraph("<b>frontend/src/pages/<br/>EventDetailPage.tsx</b>", table_cell_bold), Paragraph("Three.js / React", table_cell_style), Paragraph("Interactive 3D orbital encounter scene showing Target vs Chaser trajectories, 3D covariance uncertainty bubbles, time-to-TCA slider, and parameter inspector.", table_cell_style)],
-        [Paragraph("<b>frontend/src/pages/<br/>PredictionPage.tsx</b>", table_cell_bold), Paragraph("React Component", table_cell_style), Paragraph("Allows operators to drag-and-drop any new CDM CSV file and receive an instant AI risk score, alert band, collision probability, and top feature drivers.", table_cell_style)],
+        [Paragraph("<b>frontend/src/pages/<br/>PredictionPage.tsx</b>", table_cell_bold), Paragraph("React Component", table_cell_style), Paragraph("Allows operators to test <b>Individual</b> and <b>Sequential</b> sample CDMs with 1-click or drag-and-drop custom CSVs to receive instant risk scores, alert bands, and top SHAP drivers.", table_cell_style)],
         [Paragraph("<b>frontend/src/pages/<br/>ModelLabPage.tsx</b>", table_cell_bold), Paragraph("React Component", table_cell_style), Paragraph("Interactive model playground with dynamic threshold tuning slider, confusion matrix metrics (Recall, Precision, F2), and SHAP feature importance charts.", table_cell_style)],
         [Paragraph("<b>frontend/src/pages/<br/>GlobePage.tsx</b>", table_cell_bold), Paragraph("Three.js / Leaflet", table_cell_style), Paragraph("3D interactive Earth globe displaying real satellite orbits (ISS, Tiangong, Sentinel) and 2D ground track trajectory overlays.", table_cell_style)],
     ]
@@ -208,13 +208,13 @@ def build_pdf():
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')])
     ]))
     story.append(t_code)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     # =========================================================================
     # SECTION 2: THE REAL-WORLD SPACE PROBLEM
@@ -234,7 +234,7 @@ def build_pdf():
     story.append(Paragraph(p_base1, body_style))
 
     p_base2 = ("<b>Key Concepts from the Base Paper:</b><br/>"
-               "• <b>Dataset:</b> Real & simulated conjunction events from ESA missions (Sentinel-1/2/3, CryoSat-2, Swarm) and space debris catalogs.<br/>"
+               "• <b>Dataset:</b> Real & simulated conjunction events from ESA operational missions (Sentinel-1/2/3, CryoSat-2, Swarm) and space debris catalogs.<br/>"
                "• <b>Custom Kelvins Loss Metric ($L$):</b> An asymmetric weighted mean squared error that heavily penalizes missing high-risk events: "
                "$$L = \\frac{1}{N} \\sum_{i=1}^{N} (\\hat{y}_i - y_i)^2 \\cdot w_i, \\quad \\text{where } w_i = 10^{\\max(0, y_i + 6)}$$<br/>"
                "• <b>Base Paper Baselines:</b> Traditional 2D Foster / 3D Alfriend analytical probability integrals, Linear Regression, Multi-Layer Perceptrons (MLP), and standard Random Forests.")
@@ -273,13 +273,13 @@ def build_pdf():
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0369a1')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')])
     ]))
     story.append(t_gaps)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     # =========================================================================
     # SECTION 5: OUR FEATURE IMPORTANCE (WHAT DRIVES THE AI)
@@ -303,18 +303,50 @@ def build_pdf():
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')])
+    ]))
+    story.append(t_shap)
+    story.append(Spacer(1, 5))
+
+    # =========================================================================
+    # SECTION 6: SAMPLE CDMS FOR TESTING
+    # =========================================================================
+    story.append(Paragraph("6. Sample CDM Files for Testing the ML (Frontend Web Bench)", h1_style))
+    story.append(Paragraph("Two dedicated sample CDM files are pre-loaded in the web application (Prediction Tab) for instant 1-click evaluation:", body_style))
+
+    sample_table = [
+        [Paragraph("Sample File", table_header_style), Paragraph("Type & Structure", table_header_style), Paragraph("Simulated Scenario & Expected Prediction", table_header_style)],
+        [
+            Paragraph("<b>sample_individual_cdm.csv</b>", table_cell_bold),
+            Paragraph("<b>Type A: Individual CDM</b><br/>(1 Observation Row)", table_cell_style),
+            Paragraph("Simulates a single snapshot encounter (Event 2) with tight miss distance and high position covariance. Yields <b>HIGH risk alert</b> ($\log_{10} P_c \approx -4.66$).", table_cell_style)
+        ],
+        [
+            Paragraph("<b>sample_sequential_cdms.csv</b>", table_cell_bold),
+            Paragraph("<b>Type B: Sequential CDMs</b><br/>(5 Chronological Rows)", table_cell_style),
+            Paragraph("Simulates a multi-observation tracking sequence (Event 0) tracking risk evolution from $T-6.84$d to $T-2.22$d. Yields <b>LOW risk alert</b> ($\log_{10} P_c \approx -7.37$).", table_cell_style)
+        ]
+    ]
+    t_sample = Table(sample_table, colWidths=[140, 120, 244])
+    t_sample.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0369a1')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')])
     ]))
-    story.append(t_shap)
-    story.append(Spacer(1, 6))
+    story.append(t_sample)
+    story.append(Spacer(1, 5))
 
     # =========================================================================
-    # SECTION 6: OPERATIONAL ALERT BANDS
+    # SECTION 7: OPERATIONAL ALERT BANDS
     # =========================================================================
-    story.append(Paragraph("6. Operational Alert Bands & Triage Matrix", h1_style))
+    story.append(Paragraph("7. Operational Alert Bands & Triage Matrix", h1_style))
     band_data = [
         [Paragraph("Alert Band", table_header_style), Paragraph("Log10 Risk Threshold", table_header_style), Paragraph("Real Probability", table_header_style), Paragraph("Operational Action Required", table_header_style)],
         [Paragraph("<b>CRITICAL</b>", table_cell_bold), Paragraph("<b>≥ -4.0</b>", table_cell_style), Paragraph("≥ 1 in 10,000", table_cell_style), Paragraph("Immediate Thruster Maneuver (CAM) mandatory.", table_cell_style)],
@@ -327,18 +359,18 @@ def build_pdf():
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f172a')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2.5),
+        ('TOPPADDING', (0, 0), (-1, -1), 2.5),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')])
     ]))
     story.append(t_band)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     # =========================================================================
-    # SECTION 7: TOP 10 VIVA & INTERVIEW QUESTIONS
+    # SECTION 8: TOP 10 VIVA & INTERVIEW QUESTIONS
     # =========================================================================
-    story.append(Paragraph("7. Top 10 Viva & Interview Questions (Quick Revision Sheet)", h1_style))
+    story.append(Paragraph("8. Top 10 Viva & Interview Questions (Quick Revision Sheet)", h1_style))
 
     qas = [
         ("Q1: What is TCA and why is it critical?",
@@ -365,8 +397,8 @@ def build_pdf():
         ("Q8: How does Prahari handle multiple CDMs over time for a single event?",
          "<b>Answer:</b> As ground radars make newer observations closer to TCA, multiple CDMs are issued. Prahari tracks the chronological risk evolution and evaluates the latest available telemetry state for the most accurate prediction."),
 
-        ("Q9: What happens when an operator uploads a new custom CDM CSV?",
-         "<b>Answer:</b> The FastAPI backend accepts the file at <code>/api/predict-cdm</code>, feeds the telemetry into the 100-feature XGBoost model, and returns the risk score, alert band (CRITICAL/HIGH/LOW), and top SHAP feature drivers in &lt;10ms."),
+        ("Q9: What is the difference between Individual and Sequential CDM testing?",
+         "<b>Answer:</b> Individual CDMs test single-epoch alert triage (snapshot encounter), while Sequential CDMs test time-series tracking updates as uncertainty shrinks approaching TCA. Both can be tested with 1-click in the Prediction page."),
 
         ("Q10: What makes Prahari a standalone deployment?",
          "<b>Answer:</b> Prahari packages its pre-computed 2,167 event archive and ML model weights locally. Double-clicking <code>START.bat</code> automatically verifies dependencies and launches both backend and frontend without external cloud databases.")
@@ -384,7 +416,7 @@ def build_pdf():
 def build_markdown():
     md_content = """# PROJECT PRAHARI (प्रहारी)
 ## AI Satellite Collision Assessment & Autonomous Risk Triage Engine
-*Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance & Viva Guide*
+*Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance, Sample CDMs & Viva Guide*
 
 ---
 
@@ -400,7 +432,7 @@ The project is structured into a clean decoupled architecture connecting a high-
 | **`backend/services/dataset_service.py`** | Data Service | Loads pre-indexed 2,167 historical events from `data/events_summary.json`, handles standalone zero-database offline fallback, and builds CDM playback timelines. |
 | **`frontend/src/pages/OverviewPage.tsx`** | React Component | Mission control dashboard displaying live event counters (Total, Critical, High, Elevated, Low), risk distribution charts, and quick CDM file dropzone. |
 | **`frontend/src/pages/EventDetailPage.tsx`** | Three.js / React | Interactive 3D orbital encounter scene showing Target vs Chaser trajectories, 3D covariance uncertainty bubbles, time-to-TCA slider, and parameter inspector. |
-| **`frontend/src/pages/PredictionPage.tsx`** | React Component | Allows operators to drag-and-drop any new CDM CSV file and receive an instant AI risk score, alert band, collision probability, and top feature drivers. |
+| **`frontend/src/pages/PredictionPage.tsx`** | React Component | Allows operators to test **Individual** and **Sequential** sample CDMs with 1-click or drag-and-drop custom CSVs to receive instant risk scores, alert bands, and top SHAP drivers. |
 | **`frontend/src/pages/ModelLabPage.tsx`** | React Component | Interactive model playground with dynamic threshold tuning slider, confusion matrix metrics (Recall, Precision, F2), and SHAP feature importance charts. |
 | **`frontend/src/pages/GlobePage.tsx`** | Three.js / Leaflet | 3D interactive Earth globe displaying real satellite orbits (ISS, Tiangong, Sentinel) and 2D ground track trajectory overlays. |
 
@@ -452,7 +484,18 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
 
 ---
 
-## 6. Operational Alert Bands & Triage Matrix
+## 6. Sample CDM Files for Testing the ML (Frontend Web Bench)
+
+Two dedicated sample CDM files are pre-loaded in the web application (**Prediction Tab**) for instant 1-click evaluation:
+
+| Sample File | Type & Structure | Simulated Scenario & Expected Prediction |
+| :--- | :--- | :--- |
+| **`sample_individual_cdm.csv`** | **Type A: Individual CDM**<br/>(1 Observation Row) | Simulates a single snapshot encounter (Event 2) with tight miss distance and high position covariance. Yields **HIGH risk alert** ($\log_{10} P_c \approx -4.66$). |
+| **`sample_sequential_cdms.csv`** | **Type B: Sequential CDMs**<br/>(5 Chronological Rows) | Simulates a multi-observation tracking sequence (Event 0) tracking risk evolution from $T-6.84$d to $T-2.22$d. Yields **LOW risk alert** ($\log_{10} P_c \approx -7.37$). |
+
+---
+
+## 7. Operational Alert Bands & Triage Matrix
 
 | Alert Band | Log10 Risk Threshold | Real Probability | Operational Action Required |
 | :--- | :--- | :--- | :--- |
@@ -463,7 +506,7 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
 
 ---
 
-## 7. Top 10 Viva & Interview Questions (Quick Revision Sheet)
+## 8. Top 10 Viva & Interview Questions (Quick Revision Sheet)
 
 * **Q1: What is TCA and why is it critical?**
   * **Ans:** TCA stands for **Time of Closest Approach**. It is the exact second when two orbital objects reach their minimum distance. Collision Avoidance Maneuvers (CAM) must be executed at least 24-48 hours before TCA to save fuel and ensure trajectory clearance.
@@ -481,8 +524,8 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
   * **Ans:** A runaway collision chain reaction where orbital debris collisions create more debris fragments, permanently destroying access to Low Earth Orbit for generations.
 * **Q8: How does Prahari handle multiple CDMs over time for a single event?**
   * **Ans:** As ground radars make newer observations closer to TCA, multiple CDMs are issued. Prahari tracks the chronological risk evolution and evaluates the latest available telemetry state for the most accurate prediction.
-* **Q9: What happens when an operator uploads a new custom CDM CSV?**
-  * **Ans:** The FastAPI backend accepts the file at `/api/predict-cdm`, feeds the telemetry into the 100-feature XGBoost model, and returns the risk score, alert band (CRITICAL/HIGH/LOW), and top SHAP feature drivers in < 10ms.
+* **Q9: What is the difference between Individual and Sequential CDM testing?**
+  * **Ans:** Individual CDMs test single-epoch alert triage (snapshot encounter), while Sequential CDMs test time-series tracking updates as uncertainty shrinks approaching TCA. Both can be tested with 1-click in the Prediction page.
 * **Q10: What makes Prahari a standalone deployment?**
   * **Ans:** Prahari packages its pre-computed 2,167 event archive and ML model weights locally. Double-clicking `START.bat` automatically verifies dependencies and launches both backend and frontend without external cloud databases.
 """

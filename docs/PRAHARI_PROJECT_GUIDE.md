@@ -1,6 +1,6 @@
 # PROJECT PRAHARI (प्रहारी)
 ## AI Satellite Collision Assessment & Autonomous Risk Triage Engine
-*Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance & Viva Guide*
+*Complete Codebase Architecture, Base Paper Review, Research Gaps, Feature Importance, Sample CDMs & Viva Guide*
 
 ---
 
@@ -16,7 +16,7 @@ The project is structured into a clean decoupled architecture connecting a high-
 | **`backend/services/dataset_service.py`** | Data Service | Loads pre-indexed 2,167 historical events from `data/events_summary.json`, handles standalone zero-database offline fallback, and builds CDM playback timelines. |
 | **`frontend/src/pages/OverviewPage.tsx`** | React Component | Mission control dashboard displaying live event counters (Total, Critical, High, Elevated, Low), risk distribution charts, and quick CDM file dropzone. |
 | **`frontend/src/pages/EventDetailPage.tsx`** | Three.js / React | Interactive 3D orbital encounter scene showing Target vs Chaser trajectories, 3D covariance uncertainty bubbles, time-to-TCA slider, and parameter inspector. |
-| **`frontend/src/pages/PredictionPage.tsx`** | React Component | Allows operators to drag-and-drop any new CDM CSV file and receive an instant AI risk score, alert band, collision probability, and top feature drivers. |
+| **`frontend/src/pages/PredictionPage.tsx`** | React Component | Allows operators to test **Individual** and **Sequential** sample CDMs with 1-click or drag-and-drop custom CSVs to receive instant risk scores, alert bands, and top SHAP drivers. |
 | **`frontend/src/pages/ModelLabPage.tsx`** | React Component | Interactive model playground with dynamic threshold tuning slider, confusion matrix metrics (Recall, Precision, F2), and SHAP feature importance charts. |
 | **`frontend/src/pages/GlobePage.tsx`** | Three.js / Leaflet | 3D interactive Earth globe displaying real satellite orbits (ISS, Tiangong, Sentinel) and 2D ground track trajectory overlays. |
 
@@ -68,7 +68,18 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
 
 ---
 
-## 6. Operational Alert Bands & Triage Matrix
+## 6. Sample CDM Files for Testing the ML (Frontend Web Bench)
+
+Two dedicated sample CDM files are pre-loaded in the web application (**Prediction Tab**) for instant 1-click evaluation:
+
+| Sample File | Type & Structure | Simulated Scenario & Expected Prediction |
+| :--- | :--- | :--- |
+| **`sample_individual_cdm.csv`** | **Type A: Individual CDM**<br/>(1 Observation Row) | Simulates a single snapshot encounter (Event 2) with tight miss distance and high position covariance. Yields **HIGH risk alert** ($\log_{10} P_c pprox -4.66$). |
+| **`sample_sequential_cdms.csv`** | **Type B: Sequential CDMs**<br/>(5 Chronological Rows) | Simulates a multi-observation tracking sequence (Event 0) tracking risk evolution from $T-6.84$d to $T-2.22$d. Yields **LOW risk alert** ($\log_{10} P_c pprox -7.37$). |
+
+---
+
+## 7. Operational Alert Bands & Triage Matrix
 
 | Alert Band | Log10 Risk Threshold | Real Probability | Operational Action Required |
 | :--- | :--- | :--- | :--- |
@@ -79,7 +90,7 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
 
 ---
 
-## 7. Top 10 Viva & Interview Questions (Quick Revision Sheet)
+## 8. Top 10 Viva & Interview Questions (Quick Revision Sheet)
 
 * **Q1: What is TCA and why is it critical?**
   * **Ans:** TCA stands for **Time of Closest Approach**. It is the exact second when two orbital objects reach their minimum distance. Collision Avoidance Maneuvers (CAM) must be executed at least 24-48 hours before TCA to save fuel and ensure trajectory clearance.
@@ -97,7 +108,7 @@ Based on SHAP (SHapley Additive exPlanations) and XGBoost gain metrics, here are
   * **Ans:** A runaway collision chain reaction where orbital debris collisions create more debris fragments, permanently destroying access to Low Earth Orbit for generations.
 * **Q8: How does Prahari handle multiple CDMs over time for a single event?**
   * **Ans:** As ground radars make newer observations closer to TCA, multiple CDMs are issued. Prahari tracks the chronological risk evolution and evaluates the latest available telemetry state for the most accurate prediction.
-* **Q9: What happens when an operator uploads a new custom CDM CSV?**
-  * **Ans:** The FastAPI backend accepts the file at `/api/predict-cdm`, feeds the telemetry into the 100-feature XGBoost model, and returns the risk score, alert band (CRITICAL/HIGH/LOW), and top SHAP feature drivers in < 10ms.
+* **Q9: What is the difference between Individual and Sequential CDM testing?**
+  * **Ans:** Individual CDMs test single-epoch alert triage (snapshot encounter), while Sequential CDMs test time-series tracking updates as uncertainty shrinks approaching TCA. Both can be tested with 1-click in the Prediction page.
 * **Q10: What makes Prahari a standalone deployment?**
   * **Ans:** Prahari packages its pre-computed 2,167 event archive and ML model weights locally. Double-clicking `START.bat` automatically verifies dependencies and launches both backend and frontend without external cloud databases.
