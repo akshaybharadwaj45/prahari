@@ -7,3 +7,4 @@ numpy>=1.23.0
 joblib>=1.2.0
 python-multipart>=0.0.6
 python-docx>=0.8.11
+reportlab>=4.0.0
