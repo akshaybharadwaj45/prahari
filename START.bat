@@ -22,7 +22,14 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
-:: 3. Check Node.js and npm
+:: 3. Check Python Dependencies
+python -c "import fastapi, uvicorn, xgboost, pandas, sklearn" >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo First-time setup detected: Installing Python dependencies...
+    python -m pip install -r "%~dp0requirements.txt"
+)
+
+:: 4. Check Node.js and npm
 where npm >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Node.js and npm are not found in PATH!
