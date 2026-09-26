@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Upload, FileText, Play, CheckCircle2, AlertTriangle, 
   ShieldAlert, Activity, History, Trash2, Eye, FileSpreadsheet,
-  XCircle, ArrowRight, Box
+  XCircle, ArrowRight, Box, Download, Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,8 +31,178 @@ interface StagedFile {
 
 const STORAGE_KEY = 'prahari_prediction_history';
 
+interface SampleScenario {
+  id: string;
+  title: string;
+  description: string;
+  category: 'critical' | 'multipass' | 'dynamics' | 'safe';
+  categoryLabel: string;
+  passes: string;
+  riskLevel: string;
+  badgeColor: string;
+  stats: {
+    missDist: string;
+    relSpeed: string;
+    timeSpan: string;
+  };
+}
+
+const SAMPLE_SCENARIOS: SampleScenario[] = [
+  {
+    id: 'sample_1_iss_critical_collision.csv',
+    title: 'Scenario 1: Critical Collision (ISS vs Cosmos-2251)',
+    description: 'High-risk close approach (Miss distance 44m, high relative velocity 14.5 km/s, 8 passes). Requires emergency Collision Avoidance Maneuver (CAM).',
+    category: 'critical',
+    categoryLabel: 'Critical Alert',
+    passes: '8 Passes Arc',
+    riskLevel: 'CRITICAL / HIGH',
+    badgeColor: 'border-danger text-danger bg-danger/10',
+    stats: {
+      missDist: '44.0 m',
+      relSpeed: '14.5 km/s',
+      timeSpan: 'T-4.4d to T-2.1d',
+    }
+  },
+  {
+    id: 'sample_2_multi_pass_radar_timeline.csv',
+    title: 'Scenario 2: Multi-Pass 15-Observation Radar Timeline',
+    description: 'Extended tracking sequence tracking orbit refinement from T-6.8 days to T-2.2 days over 15 sequential radar passes.',
+    category: 'multipass',
+    categoryLabel: 'Multi-Pass Radar',
+    passes: '15 Passes Full Arc',
+    riskLevel: 'NOMINAL RESOLVED',
+    badgeColor: 'border-emerald-500 text-emerald-400 bg-emerald-500/10',
+    stats: {
+      missDist: '44.0 m',
+      relSpeed: '11.3 km/s',
+      timeSpan: 'T-6.8d to T-2.2d',
+    }
+  },
+  {
+    id: 'sample_3_single_shot_emergency_cdm.csv',
+    title: 'Scenario 3: Single-Shot Emergency Flash CDM',
+    description: 'Single radar snapshot with 37m miss distance. Demonstrates rapid sub-3ms automated triage on isolated, newly detected CDMs.',
+    category: 'critical',
+    categoryLabel: 'Single Flash',
+    passes: '1 Snapshot Flash',
+    riskLevel: 'CRITICAL',
+    badgeColor: 'border-danger text-danger bg-danger/10',
+    stats: {
+      missDist: '37.0 m',
+      relSpeed: '13.9 km/s',
+      timeSpan: 'T-2.3d TCA',
+    }
+  },
+  {
+    id: 'sample_4_moderate_elevated_risk.csv',
+    title: 'Scenario 4: Moderate Warning Conjunction',
+    description: 'Conjunction requiring prioritized ground radar tasking and orbital tracking verification (162m miss distance, 8 passes).',
+    category: 'critical',
+    categoryLabel: 'Elevated Warning',
+    passes: '8 Passes Sequence',
+    riskLevel: 'CRITICAL / ELEVATED',
+    badgeColor: 'border-amber-500 text-amber-400 bg-amber-500/10',
+    stats: {
+      missDist: '162.0 m',
+      relSpeed: '2.9 km/s',
+      timeSpan: 'T-4.3d to T-2.1d',
+    }
+  },
+  {
+    id: 'sample_5_benign_safe_encounter.csv',
+    title: 'Scenario 5: Benign Safe Spacecraft Pass',
+    description: 'Safe orbital clearance with > 60 km miss distance. Confirms nominal status without thruster burn or mission disruption.',
+    category: 'safe',
+    categoryLabel: 'Safe Nominal',
+    passes: '1 Pass Nominal',
+    riskLevel: 'BENIGN / SAFE',
+    badgeColor: 'border-emerald-500 text-emerald-400 bg-emerald-500/10',
+    stats: {
+      missDist: '60.8 km',
+      relSpeed: '0.2 km/s',
+      timeSpan: 'T-4.8d Nominal',
+    }
+  },
+  {
+    id: 'sample_6_rapid_risk_escalation.csv',
+    title: 'Scenario 6: Rapid Risk Escalation (Safe -> Critical Alert)',
+    description: 'Starts at safe low risk (Pc ≈ 10^-16) at T-6.5d, but covariance shrinkage reveals high-risk collision path (99m miss distance, 14 passes).',
+    category: 'dynamics',
+    categoryLabel: 'Dynamic Escalation',
+    passes: '14 Passes Timeline',
+    riskLevel: 'HIGH ESCALATION',
+    badgeColor: 'border-rose-500 text-rose-400 bg-rose-500/10',
+    stats: {
+      missDist: '99.0 m',
+      relSpeed: '14.8 km/s',
+      timeSpan: 'T-6.5d to T-2.1d',
+    }
+  },
+  {
+    id: 'sample_7_deescalating_false_alarm.csv',
+    title: 'Scenario 7: De-escalating False Alarm Clear-Out',
+    description: 'Starts as elevated alert due to early uncertainty bubble (Pc ≈ 10^-3.8), but resolves to safe (Pc ≈ 10^-18) as radar data refines path (16 passes).',
+    category: 'dynamics',
+    categoryLabel: 'False Alarm Cleared',
+    passes: '16 Passes Sequence',
+    riskLevel: 'RESOLVED SAFE',
+    badgeColor: 'border-cyan-500 text-cyan-400 bg-cyan-500/10',
+    stats: {
+      missDist: '157.0 m',
+      relSpeed: '15.2 km/s',
+      timeSpan: 'T-6.9d to T-2.1d',
+    }
+  },
+  {
+    id: 'sample_8_hypervelocity_crosstrack.csv',
+    title: 'Scenario 8: Hypervelocity Cross-Track Pass (14.1 km/s)',
+    description: 'High relative speed crossing (14,136 m/s = 50,889 km/h) between retrograde polar LEO objects with 751m miss distance across 5 passes.',
+    category: 'multipass',
+    categoryLabel: 'Hypervelocity LEO',
+    passes: '5 Passes Crossing',
+    riskLevel: 'HIGH-SPEED PASS',
+    badgeColor: 'border-orange-500 text-orange-400 bg-orange-500/10',
+    stats: {
+      missDist: '751.0 m',
+      relSpeed: '14.1 km/s',
+      timeSpan: 'T-3.6d to T-2.2d',
+    }
+  },
+  {
+    id: 'sample_9_polar_sso_constellation.csv',
+    title: 'Scenario 9: Polar Sun-Synchronous (SSO) Constellation Pass',
+    description: '15-Pass tracking arc in high-density polar Sun-Synchronous Orbit with 110m miss distance and risk escalation to Pc = 0.012%.',
+    category: 'multipass',
+    categoryLabel: 'SSO Orbit Arc',
+    passes: '15 Passes Polar Arc',
+    riskLevel: 'CRITICAL ALERT',
+    badgeColor: 'border-danger text-danger bg-danger/10',
+    stats: {
+      missDist: '110.0 m',
+      relSpeed: '13.0 km/s',
+      timeSpan: 'T-6.8d to T-2.2d',
+    }
+  },
+  {
+    id: 'sample_10_coplanar_slow_drift.csv',
+    title: 'Scenario 10: Low Relative Velocity Co-Planar Drift',
+    description: 'Low relative velocity encounter (63 m/s) between satellites drifting in adjacent orbital planes with 935m miss distance.',
+    category: 'safe',
+    categoryLabel: 'Co-Planar Drift',
+    passes: '2 Passes Drift',
+    riskLevel: 'LOW RISK DRIFT',
+    badgeColor: 'border-teal-500 text-teal-400 bg-teal-500/10',
+    stats: {
+      missDist: '935.0 m',
+      relSpeed: '63 m/s',
+      timeSpan: 'T-4.8d Nominal',
+    }
+  },
+];
+
 export default function PredictionPage() {
   const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [stagedFile, setStagedFile] = useState<StagedFile | null>(null);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +259,24 @@ export default function PredictionPage() {
     } finally {
       setStagingLoading(false);
       e.target.value = ''; // Reset file input
+    }
+  };
+
+  const loadSampleTemplate = async (filename: string, label: string) => {
+    setError(null);
+    setStagingLoading(true);
+    try {
+      const res = await fetch(`/${filename}`);
+      if (!res.ok) throw new Error(`Could not load scenario ${filename}`);
+      const blob = await res.blob();
+      const parsed = await parseCsvPreview(blob, `${label} (${filename})`);
+      setStagedFile(parsed);
+      setResult(null); // Stage file only, user clicks RUN PREDICTION to execute
+      window.scrollTo({ top: 320, behavior: 'smooth' });
+    } catch (err: any) {
+      setError(err.message || 'Failed to stage sample scenario');
+    } finally {
+      setStagingLoading(false);
     }
   };
 
@@ -300,6 +488,117 @@ export default function PredictionPage() {
               <span>{error}</span>
             </div>
           )}
+        </div>
+
+        {/* Benchmark Sample CDM Scenarios Panel */}
+        <div className="border border-border/80 bg-surface/80 backdrop-blur rounded-xl p-6 shadow-md">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 border-b border-border/40 pb-3">
+            <div>
+              <h2 className="text-sm font-mono font-semibold text-textPrimary flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" />
+                BENCHMARK SAMPLE CDM SCENARIOS (READY TO TEST & DEMO)
+              </h2>
+              <p className="text-xs font-mono text-textSecondary mt-0.5">
+                10 genuine CCSDS test scenarios covering emergency collisions, radar arcs, dynamic escalation, and safe clearances.
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-textSecondary bg-background/80 px-2.5 py-0.5 rounded border border-border/50 shrink-0">
+              10 Real-World Datasets
+            </span>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-2 mb-4 pb-2 border-b border-border/30">
+            {[
+              { id: 'all', label: 'All Scenarios', count: SAMPLE_SCENARIOS.length },
+              { id: 'critical', label: 'Critical & Warning', count: SAMPLE_SCENARIOS.filter(s => s.category === 'critical').length },
+              { id: 'multipass', label: 'Multi-Pass Arcs', count: SAMPLE_SCENARIOS.filter(s => s.category === 'multipass').length },
+              { id: 'dynamics', label: 'Dynamic Evolution', count: SAMPLE_SCENARIOS.filter(s => s.category === 'dynamics').length },
+              { id: 'safe', label: 'Safe & Nominal', count: SAMPLE_SCENARIOS.filter(s => s.category === 'safe').length },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedCategory(tab.id)}
+                className={`px-3 py-1 rounded text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedCategory === tab.id
+                    ? 'bg-accent text-background font-bold shadow-sm'
+                    : 'bg-background/60 hover:bg-surfaceHover text-textSecondary hover:text-textPrimary border border-border/50'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded ${
+                  selectedCategory === tab.id ? 'bg-background/30 text-background' : 'bg-surface text-textSecondary'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {SAMPLE_SCENARIOS
+              .filter(sc => selectedCategory === 'all' || sc.category === selectedCategory)
+              .map((sc) => (
+              <div 
+                key={sc.id} 
+                className="border border-border/60 bg-background/60 hover:border-accent/40 rounded-lg p-3.5 flex flex-col justify-between transition-all group"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${sc.badgeColor}`}>
+                      {sc.riskLevel}
+                    </span>
+                    <span className="text-[10px] font-mono text-textSecondary bg-surface px-1.5 py-0.5 rounded border border-border/40">
+                      {sc.passes}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-mono font-bold text-textPrimary group-hover:text-accent transition-colors line-clamp-1 mb-1" title={sc.title}>
+                    {sc.title}
+                  </h3>
+                  <p className="text-[11px] font-mono text-textSecondary line-clamp-2 mb-2.5 leading-relaxed">
+                    {sc.description}
+                  </p>
+
+                  {/* Telemetry quick chips */}
+                  <div className="grid grid-cols-3 gap-1.5 mb-3 bg-surface/50 p-1.5 rounded border border-border/30 text-[10px] font-mono text-textSecondary">
+                    <div className="text-center">
+                      <span className="block text-[9px] text-textSecondary/70 uppercase">Miss Dist</span>
+                      <span className="font-semibold text-textPrimary">{sc.stats.missDist}</span>
+                    </div>
+                    <div className="text-center border-x border-border/30">
+                      <span className="block text-[9px] text-textSecondary/70 uppercase">Rel Speed</span>
+                      <span className="font-semibold text-textPrimary">{sc.stats.relSpeed}</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="block text-[9px] text-textSecondary/70 uppercase">Arc</span>
+                      <span className="font-semibold text-textPrimary truncate">{sc.stats.timeSpan}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2.5 border-t border-border/30">
+                  <button
+                    type="button"
+                    onClick={() => loadSampleTemplate(sc.id, sc.title)}
+                    disabled={stagingLoading || loading}
+                    className="flex-1 bg-surface hover:bg-accent hover:text-background border border-border text-xs font-mono py-1.5 px-2.5 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer font-medium disabled:opacity-50"
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Stage Scenario</span>
+                  </button>
+                  <a
+                    href={`/${sc.id}`}
+                    download={sc.id}
+                    className="p-1.5 border border-border hover:bg-surfaceHover text-textSecondary hover:text-textPrimary rounded transition-colors"
+                    title={`Download ${sc.id}`}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Staged File & Prediction Trigger */}
