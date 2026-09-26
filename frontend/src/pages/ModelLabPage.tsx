@@ -158,11 +158,11 @@ export default function ModelLabPage() {
             <Activity className="text-accent w-7 h-7" />
             XGBOOST MODEL LAB
             <span className="text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 rounded tracking-widest uppercase">
-              98 Pure Physical Features (Zero Leakage)
+              100 Native CDM Features
             </span>
           </h1>
           <p className="text-sm font-mono text-textSecondary mt-1">
-            Pure astrodynamics conjunction triage engine trained directly on 98 physical kinematics, 3D covariance matrices, and solar flux parameters.
+            Astrodynamics conjunction risk engine trained directly on 100 native telemetry parameters, 3D covariance matrices, and solar flux measurements.
           </p>
         </div>
       </div>
@@ -175,10 +175,10 @@ export default function ModelLabPage() {
           </div>
           <div>
             <div className="font-mono font-bold text-sm md:text-base text-textPrimary flex items-center gap-2">
-              TECHNICAL REFERENCE: 98 PURE PHYSICAL TELEMETRY PARAMETERS (ZERO LEAKAGE)
+              TECHNICAL REFERENCE: 100 NATIVE CDM TELEMETRY PARAMETERS
             </div>
             <div className="font-mono text-xs md:text-sm text-textSecondary mt-1 leading-relaxed">
-              Trained exclusively on 3D covariance ellipsoids, miss distance, and relative velocities without analytical risk proxies. 100% defensible, physics-grounded AI triage.
+              Trained exclusively on native CCSDS Conjunction Data Message parameters, 3D covariance ellipsoids, and relative velocities. End-to-end automated AI risk triage.
             </div>
           </div>
         </div>

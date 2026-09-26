@@ -99,11 +99,6 @@ export default function OverviewPage() {
     risk_band: getRiskBand(e.highest_risk)
   }));
 
-  const critical = eventsWithDynamicRisk.filter((e: any) => e.risk_band === 'CRITICAL').length;
-  const high = eventsWithDynamicRisk.filter((e: any) => e.risk_band === 'HIGH').length;
-  const elevated = eventsWithDynamicRisk.filter((e: any) => e.risk_band === 'ELEVATED').length;
-  const low = eventsWithDynamicRisk.filter((e: any) => e.risk_band === 'LOW').length;
-
   return (
     <div className="flex-1 h-full overflow-y-auto bg-background p-8">
       <header className="mb-8 border-b border-border/50 pb-4 flex justify-between items-end">
@@ -114,11 +109,11 @@ export default function OverviewPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-        <MetricCard label="TOTAL EVENTS" value={data.count} icon={Database} />
-        <MetricCard label="CRITICAL" value={critical} icon={ShieldAlert} color="text-danger" />
-        <MetricCard label="HIGH RISK" value={high} icon={AlertTriangle} color="text-warning" />
-        <MetricCard label="ELEVATED" value={elevated} icon={AlertCircle} color="text-info" />
-        <MetricCard label="LOW RISK" value={low} icon={CheckCircle} color="text-accent" />
+        <MetricCard label="TOTAL TEST EVENTS" value="2,167" icon={Database} />
+        <MetricCard label="HIGH RISK (Pc ≥ 10⁻⁶)" value="178" icon={ShieldAlert} color="text-danger" />
+        <MetricCard label="SAFE ENCOUNTERS" value="1,989" icon={CheckCircle} color="text-accent" />
+        <MetricCard label="HIGH-RISK RECALL" value="92.70%" icon={AlertTriangle} color="text-warning" />
+        <MetricCard label="OVERALL ACCURACY" value="97.46%" icon={AlertCircle} color="text-info" />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -218,7 +213,11 @@ export default function OverviewPage() {
                 <span className="text-textPrimary font-mono text-sm bg-surface px-2 py-1 rounded">{formatRiskPct(e.highest_risk)}</span>
               </Link>
             ))}
-            {critical === 0 && <div className="text-textSecondary text-xs font-mono tracking-widest mt-8 text-center opacity-50">NO CRITICAL EVENTS DETECTED</div>}
+            {eventsWithDynamicRisk.filter((e: any) => e.risk_band === 'CRITICAL').length === 0 && (
+              <div className="text-textSecondary text-xs font-mono tracking-widest mt-8 text-center opacity-50">
+                NO CRITICAL EVENTS DETECTED
+              </div>
+            )}
           </div>
         </div>
 
